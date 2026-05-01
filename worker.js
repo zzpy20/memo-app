@@ -45,6 +45,8 @@ function sanitizeFTS(q) {
 
 const pfx = id => `memo-${id}/`;
 
+function dec(s) { try { return decodeURIComponent(s); } catch { return s; } }
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -117,7 +119,7 @@ export default {
     // ── Note ──────────────────────────────────────────────────────────────────
     m = path.match(/^\/memos\/([^/]+)\/note$/);
     if (m) {
-      const id = m[1];
+      const id = dec(m[1]);
       if (method === 'GET') {
         const obj = await env.MEMO_R2.get(pfx(id) + '_note');
         const content = obj ? await obj.text() : '';
@@ -132,7 +134,7 @@ export default {
     // ── Meta ──────────────────────────────────────────────────────────────────
     m = path.match(/^\/memos\/([^/]+)\/meta$/);
     if (m) {
-      const id = m[1];
+      const id = dec(m[1]);
       if (method === 'GET') {
         const obj = await env.MEMO_R2.get(pfx(id) + '_meta');
         if (!obj) return json({ files: {}, folders: [], trash: [] }, 200, h);
@@ -148,7 +150,7 @@ export default {
     // ── Files list + upload ───────────────────────────────────────────────────
     m = path.match(/^\/memos\/([^/]+)\/files$/);
     if (m) {
-      const id = m[1];
+      const id = dec(m[1]);
       if (method === 'GET') {
         const p = pfx(id);
         const listed = await env.MEMO_R2.list({ prefix: p, limit: 1000 });
@@ -164,17 +166,33 @@ export default {
         const file = form.get('file');
         const folder = String(form.get('folder') || '').replace(/[^a-zA-Z0-9_\- ]/g, '').trim().slice(0, 50);
         if (!(file instanceof File)) return json({ error: 'no_file' }, 400, h);
-        const safeName = file.name.replace(/[^a-zA-Z0-9._\- ]/g, '_');
+        const safeName = file.name.replace(/\//g, '_');
         const relKey = (folder ? folder + '/' : '') + safeName;
         await env.MEMO_R2.put(pfx(id) + relKey, file.stream(), { httpMetadata: { contentType: file.type || 'application/octet-stream' } });
         return json({ ok: true, key: relKey }, 200, h);
       }
     }
 
+    // ── Move file ─────────────────────────────────────────────────────────────
+    m = path.match(/^\/memos\/([^/]+)\/move$/);
+    if (m && method === 'POST') {
+      const id = dec(m[1]);
+      const { srcKey, dstFolder } = await request.json();
+      if (!srcKey) return json({ error: 'invalid' }, 400, h);
+      const name = srcKey.split('/').pop();
+      const dstKey = dstFolder ? dstFolder + '/' + name : name;
+      if (srcKey === dstKey) return json({ ok: true, key: dstKey }, 200, h);
+      const obj = await env.MEMO_R2.get(pfx(id) + srcKey);
+      if (!obj) return json({ error: 'not_found' }, 404, h);
+      await env.MEMO_R2.put(pfx(id) + dstKey, obj.body, { httpMetadata: obj.httpMetadata });
+      await env.MEMO_R2.delete(pfx(id) + srcKey);
+      return json({ ok: true, key: dstKey }, 200, h);
+    }
+
     // ── Trash (soft delete) ───────────────────────────────────────────────────
     m = path.match(/^\/memos\/([^/]+)\/trash$/);
     if (m && method === 'POST') {
-      const id = m[1];
+      const id = dec(m[1]);
       const { key } = await request.json();
       if (!key || key.startsWith('_')) return json({ error: 'invalid' }, 400, h);
       const trashName = key.replace(/\//g, '__');
@@ -188,7 +206,7 @@ export default {
     // ── Restore from trash ────────────────────────────────────────────────────
     m = path.match(/^\/memos\/([^/]+)\/restore$/);
     if (m && method === 'POST') {
-      const id = m[1];
+      const id = dec(m[1]);
       const { trashKey, origKey } = await request.json();
       if (!trashKey || !origKey) return json({ error: 'invalid' }, 400, h);
       const obj = await env.MEMO_R2.get(pfx(id) + trashKey);
@@ -201,7 +219,8 @@ export default {
     // ── Serve / delete file ───────────────────────────────────────────────────
     m = path.match(/^\/memos\/([^/]+)\/files\/(.+)$/);
     if (m) {
-      const id = m[1], fileKey = m[2];
+      const id = dec(m[1]);
+      const fileKey = dec(m[2]);
       if (method === 'GET') {
         const obj = await env.MEMO_R2.get(pfx(id) + fileKey);
         if (!obj) return json({ error: 'not_found' }, 404, h);
@@ -218,7 +237,7 @@ export default {
     // ── Get / Update / Delete single memo ─────────────────────────────────────
     m = path.match(/^\/memos\/([^/]+)$/);
     if (m) {
-      const id = m[1];
+      const id = dec(m[1]);
       if (method === 'GET') {
         const row = await env.MEMO_D1.prepare('SELECT * FROM memos WHERE id=?').bind(id).first();
         if (!row) return json({ error: 'not_found' }, 404, h);

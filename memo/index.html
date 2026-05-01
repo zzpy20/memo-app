@@ -16,6 +16,7 @@
 }
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 
+/* Auth */
 #auth-overlay{position:fixed;inset:0;background:#1c1917;display:flex;align-items:center;justify-content:center;z-index:2000}
 #auth-overlay.hidden{display:none}
 .auth-box{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center}
@@ -24,65 +25,80 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .auth-box button{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:1rem;font-family:inherit;cursor:pointer;font-weight:500}
 #auth-error{color:var(--danger);font-size:.85rem;margin-top:8px;min-height:18px}
 
-/* Header */
-.page-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:56px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
-.back-link{color:var(--muted);text-decoration:none;font-size:.9rem;padding:4px 8px;border-radius:6px;flex-shrink:0}
+/* Page header */
+.page-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+.back-link{color:var(--muted);text-decoration:none;font-size:.85rem;padding:4px 8px;border-radius:6px;flex-shrink:0;white-space:nowrap}
 .back-link:hover{background:var(--bg);color:var(--text)}
-.memo-id-badge{font-family:'DM Mono',monospace;font-size:.78rem;color:var(--accent);font-weight:500;background:#ede9fe;padding:3px 10px;border-radius:20px;flex-shrink:0;white-space:nowrap}
-#title-input{flex:1;border:none;outline:none;font-size:1rem;font-weight:600;font-family:inherit;background:transparent;color:var(--text);min-width:0}
-#title-input::placeholder{color:var(--muted);font-weight:400}
-.header-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
-.btn-icon{background:none;border:none;cursor:pointer;padding:5px 7px;border-radius:7px;font-size:.9rem;opacity:.5;line-height:1;transition:opacity .1s}
+.memo-id-badge{font-family:'DM Mono',monospace;font-size:.75rem;color:var(--accent);font-weight:500;background:#ede9fe;padding:3px 10px;border-radius:20px;flex-shrink:0;white-space:nowrap}
+.header-spacer{flex:1}
+.btn-icon{background:none;border:none;cursor:pointer;padding:5px 7px;border-radius:7px;font-size:.95rem;opacity:.45;line-height:1;transition:opacity .1s;flex-shrink:0}
 .btn-icon:hover{opacity:1;background:var(--bg)}
 .btn-icon.active{opacity:1}
 
+/* Title section */
+.title-section{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px 14px}
+#title-input{width:100%;border:none;outline:none;font-size:1.5rem;font-weight:600;font-family:inherit;color:var(--text);background:transparent;margin-bottom:6px;display:block}
+#title-input::placeholder{color:#ccc;font-weight:400}
+#desc-input{width:100%;border:none;outline:none;font-size:.9rem;font-family:inherit;color:var(--muted);background:transparent;resize:none;min-height:20px;line-height:1.5;display:block}
+#desc-input::placeholder{color:#ccc}
+
 /* Actions bar */
-.actions-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.upload-label{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--accent);color:#fff;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:500;flex-shrink:0}
-.upload-label:hover{background:var(--accent-hover)}
-.folder-nav{display:flex;gap:6px;flex-wrap:wrap;flex:1}
-.folder-pill{padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;font-size:.8rem;font-family:inherit;cursor:pointer;color:var(--muted)}
+.actions-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.folder-nav{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
+.folder-pill{padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;font-size:.8rem;font-family:inherit;cursor:pointer;color:var(--muted);white-space:nowrap}
 .folder-pill:hover{border-color:var(--accent);color:var(--accent)}
 .folder-pill.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-.folder-pill.trash-pill{color:var(--danger);border-color:#fecaca}
-.folder-pill.trash-pill.active{background:var(--danger);color:#fff;border-color:var(--danger)}
-#sort-select{padding:5px 10px;border:1px solid var(--border);border-radius:7px;font-size:.8rem;font-family:inherit;background:var(--surface);color:var(--text)}
-#new-folder-btn{padding:5px 12px;border:1px solid var(--border);border-radius:7px;font-size:.8rem;font-family:inherit;cursor:pointer;background:transparent;color:var(--muted)}
+#sort-select{padding:5px 10px;border:1px solid var(--border);border-radius:7px;font-size:.8rem;font-family:inherit;background:var(--surface);color:var(--text);flex-shrink:0}
+#new-folder-btn{padding:5px 12px;border:1px solid var(--border);border-radius:7px;font-size:.8rem;font-family:inherit;cursor:pointer;background:transparent;color:var(--muted);flex-shrink:0;white-space:nowrap}
 #new-folder-btn:hover{border-color:var(--accent);color:var(--accent)}
 
-/* File grid */
-#file-grid{padding:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
-.file-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
-.file-thumb{height:120px;background:var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden}
-.file-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.file-thumb .file-icon{font-size:2.5rem;opacity:.4}
-.file-thumb .pdf-badge{position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;font-size:.65rem;padding:2px 6px;border-radius:4px;font-family:'DM Mono',monospace}
-.file-info{padding:10px}
-.file-name{font-size:.78rem;font-weight:500;word-break:break-all;line-height:1.3;margin-bottom:4px}
-.file-size{font-size:.7rem;color:var(--muted)}
-.file-caption{font-size:.72rem;color:var(--muted);font-style:italic;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.file-actions{display:flex;gap:4px;margin-top:6px}
-.file-actions button{flex:1;padding:4px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;cursor:pointer;background:transparent;font-family:inherit;color:var(--muted)}
-.file-actions button:hover{border-color:var(--accent);color:var(--accent)}
-.file-actions .del-btn:hover{border-color:var(--danger);color:var(--danger)}
+/* Drop zone */
+.drop-zone{margin:16px 20px;border:2px dashed var(--border);border-radius:var(--radius);padding:28px 20px;text-align:center;cursor:pointer;transition:all .15s;background:var(--surface)}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:#f5f3ff}
+.drop-zone-icon{font-size:1.6rem;margin-bottom:6px;opacity:.5}
+.drop-zone-text{font-size:.85rem;color:var(--muted)}
+.drop-zone-text b{color:var(--accent);font-weight:500}
 
-/* Trash items */
-.trash-item{background:var(--surface);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);font-size:.85rem}
-.trash-item-name{flex:1;color:var(--muted);word-break:break-all}
-.trash-item-date{font-size:.72rem;color:var(--muted);white-space:nowrap}
-.trash-actions button{padding:4px 10px;border-radius:6px;border:1px solid var(--border);font-size:.75rem;cursor:pointer;background:transparent;font-family:inherit;margin-left:6px}
-.trash-actions .restore-btn:hover{border-color:var(--success);color:var(--success)}
-.trash-actions .perm-del-btn:hover{border-color:var(--danger);color:var(--danger)}
+/* File list */
+.file-list-wrap{margin:0 20px 16px;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.file-list-empty{padding:24px;text-align:center;color:var(--muted);font-size:.85rem}
+.file-row{display:flex;align-items:center;padding:9px 14px;gap:10px;border-bottom:1px solid var(--border);transition:background .1s}
+.file-row:last-child{border-bottom:none}
+.file-row:hover{background:#fafaf9}
+.file-row-icon{font-size:1.1rem;flex-shrink:0;width:22px;text-align:center}
+.file-row-thumb{width:32px;height:32px;border-radius:5px;object-fit:cover;flex-shrink:0;cursor:pointer}
+.file-row-name{flex:1;font-size:.83rem;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-row-folder{font-size:.73rem;color:var(--muted);background:var(--bg);padding:2px 8px;border-radius:10px;flex-shrink:0;white-space:nowrap}
+.file-row-size{font-size:.73rem;color:var(--muted);flex-shrink:0;white-space:nowrap;min-width:52px;text-align:right}
+.file-row-actions{display:flex;gap:4px;flex-shrink:0}
+.file-row-actions button{padding:3px 8px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;cursor:pointer;background:transparent;font-family:inherit;color:var(--muted);white-space:nowrap}
+.file-row-actions button:hover{border-color:var(--accent);color:var(--accent)}
+.file-row-actions .del-btn:hover{border-color:var(--danger);color:var(--danger)}
+
+/* Move dropdown */
+.move-wrap{position:relative}
+.move-menu{position:absolute;right:0;top:100%;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:200;min-width:130px;overflow:hidden}
+.move-menu button{display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:transparent;font-size:.82rem;font-family:inherit;cursor:pointer;color:var(--text)}
+.move-menu button:hover{background:var(--bg);color:var(--accent)}
+.move-menu .move-divider{height:1px;background:var(--border);margin:2px 0}
+
+/* Image gallery */
+.gallery-section{margin:0 20px 16px}
+.gallery-header{font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.image-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.gallery-thumb{aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;background:var(--bg)}
+.gallery-thumb img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .15s}
+.gallery-thumb:hover img{transform:scale(1.06)}
 
 /* Sections */
-.section{background:var(--surface);border-top:1px solid var(--border);margin-top:0}
-.section summary{padding:14px 20px;cursor:pointer;font-size:.8rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;justify-content:space-between;list-style:none;user-select:none}
+.section{background:var(--surface);border-top:1px solid var(--border)}
+.section summary{padding:14px 20px;cursor:pointer;font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;justify-content:space-between;list-style:none;user-select:none}
 .section summary::-webkit-details-marker{display:none}
 .section summary:hover{color:var(--text)}
-.section summary .summary-right{display:flex;align-items:center;gap:10px;font-size:.75rem;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0}
-.section-content{padding:0 20px 20px}
+.section summary .s-right{font-size:.75rem;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0}
+.section-body{padding:0 20px 20px}
 
-/* Notes editor */
+/* Notes */
 .editor-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .editor-toolbar button{padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;cursor:pointer;background:transparent;font-family:inherit;color:var(--text)}
 .editor-toolbar button:hover{border-color:var(--accent);color:var(--accent)}
@@ -94,45 +110,53 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #save-note-btn{padding:7px 16px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:.85rem;cursor:pointer;font-family:inherit;font-weight:500}
 #save-note-btn:hover{background:var(--accent-hover)}
 
-/* Info section */
-.field-group{margin-bottom:16px}
-.field-label{font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block}
-.field-input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.9rem;font-family:inherit;color:var(--text);background:var(--surface)}
+/* Info fields */
+.field-group{margin-bottom:14px}
+.field-label{font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;display:block}
+.field-input{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.88rem;font-family:inherit;color:var(--text)}
 .field-input:focus{outline:none;border-color:var(--accent)}
-textarea.field-input{resize:vertical;min-height:80px}
-
-/* Tags input */
-.tag-input-wrap{display:flex;flex-wrap:wrap;gap:6px;border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:text;background:var(--surface)}
+textarea.field-input{resize:vertical;min-height:72px}
+.tag-input-wrap{display:flex;flex-wrap:wrap;gap:6px;border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:text;min-height:38px;align-items:center}
 .tag-input-wrap:focus-within{border-color:var(--accent)}
 .tag-chip{display:inline-flex;align-items:center;gap:4px;background:#ede9fe;color:var(--accent);border-radius:12px;padding:2px 8px;font-size:.78rem}
-.tag-chip button{background:none;border:none;cursor:pointer;color:inherit;padding:0;font-size:.8rem;line-height:1}
+.tag-chip button{background:none;border:none;cursor:pointer;color:inherit;padding:0;font-size:.85rem;line-height:1}
 #tag-text-input{border:none;outline:none;font-size:.85rem;font-family:inherit;min-width:80px;flex:1}
-
-/* Links */
 .links-list{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
 .link-row{display:flex;gap:8px;align-items:center}
 .link-row input{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:.83rem;font-family:inherit}
 .link-row input:focus{outline:none;border-color:var(--accent)}
-.link-row button{padding:5px 10px;border:1px solid var(--border);border-radius:7px;font-size:.8rem;cursor:pointer;background:transparent;color:var(--muted)}
+.link-row button{padding:5px 9px;border:1px solid var(--border);border-radius:7px;font-size:.8rem;cursor:pointer;background:transparent;color:var(--muted)}
 .link-row button:hover{border-color:var(--danger);color:var(--danger)}
 #add-link-btn{padding:6px 12px;border:1px dashed var(--border);border-radius:7px;font-size:.82rem;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit}
 #add-link-btn:hover{border-color:var(--accent);color:var(--accent)}
-#save-info-btn{margin-top:16px;padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.9rem;cursor:pointer;font-family:inherit;font-weight:500}
+#save-info-btn{margin-top:14px;padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.9rem;cursor:pointer;font-family:inherit;font-weight:500}
 #save-info-btn:hover{background:var(--accent-hover)}
+#cover-select{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit}
+#cover-select:focus{outline:none;border-color:var(--accent)}
+
+/* Trash */
+.trash-grid{display:flex;flex-direction:column;gap:8px}
+.trash-item{background:var(--bg);border-radius:8px;padding:9px 14px;display:flex;align-items:center;gap:10px;font-size:.83rem}
+.trash-item-name{flex:1;color:var(--muted);word-break:break-all}
+.trash-item-date{font-size:.72rem;color:var(--muted);white-space:nowrap;flex-shrink:0}
+.trash-actions{display:flex;gap:6px;flex-shrink:0}
+.trash-actions button{padding:4px 10px;border-radius:6px;border:1px solid var(--border);font-size:.75rem;cursor:pointer;background:transparent;font-family:inherit}
+.restore-btn:hover{border-color:var(--success);color:var(--success)}
+.perm-del-btn:hover{border-color:var(--danger);color:var(--danger)}
 
 /* Lightbox */
-#lightbox{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:1500;display:flex;align-items:center;justify-content:center}
+#lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:1500;display:flex;align-items:center;justify-content:center}
 #lightbox.hidden{display:none}
 #lb-close{position:absolute;top:16px;right:20px;background:none;border:none;color:#fff;font-size:1.6rem;cursor:pointer;opacity:.7;z-index:10}
 #lb-close:hover{opacity:1}
-#lb-prev,#lb-next{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);border:none;color:#fff;font-size:2rem;cursor:pointer;padding:12px 16px;border-radius:8px;z-index:10}
+#lb-prev,#lb-next{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);border:none;color:#fff;font-size:2rem;cursor:pointer;padding:12px 16px;border-radius:8px;z-index:10;line-height:1}
 #lb-prev{left:16px} #lb-next{right:16px}
 #lb-prev:hover,#lb-next:hover{background:rgba(255,255,255,.22)}
 #lb-content{max-width:90vw;max-height:85vh;display:flex;align-items:center;justify-content:center}
 #lb-content img{max-width:90vw;max-height:85vh;object-fit:contain;border-radius:4px}
 #lb-content iframe{width:80vw;height:85vh;border:none;border-radius:4px;background:#fff}
 #lb-caption{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.75);font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80vw}
-#lb-counter{position:absolute;top:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.6);font-size:.8rem}
+#lb-counter{position:absolute;top:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.55);font-size:.78rem}
 
 /* File info modal */
 #info-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1600;display:flex;align-items:center;justify-content:center}
@@ -146,16 +170,6 @@ textarea.field-input{resize:vertical;min-height:80px}
 .modal-footer button{padding:7px 16px;border-radius:7px;font-size:.85rem;cursor:pointer;font-family:inherit;font-weight:500}
 .btn-cancel{border:1px solid var(--border);background:transparent;color:var(--muted)}
 .btn-save{background:var(--accent);color:#fff;border:none}
-
-/* Cover picker */
-#cover-select{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit}
-#cover-select:focus{outline:none;border-color:var(--accent)}
-
-/* Trash grid */
-.trash-grid{display:flex;flex-direction:column;gap:8px}
-
-/* Upload overlay */
-.uploading{opacity:.6;pointer-events:none}
 </style>
 </head>
 <body>
@@ -172,22 +186,21 @@ textarea.field-input{resize:vertical;min-height:80px}
 <div class="page-header">
   <a href="../" class="back-link">← Back</a>
   <span id="memo-id-badge" class="memo-id-badge">…</span>
+  <div class="header-spacer"></div>
+  <button class="btn-icon" id="pin-btn" title="Pin" onclick="togglePin()">📌</button>
+  <button class="btn-icon" title="Print label" onclick="printLabel()">🏷</button>
+</div>
+
+<div class="title-section">
   <input type="text" id="title-input" placeholder="Untitled memo" autocomplete="off">
-  <div class="header-actions">
-    <button class="btn-icon" id="pin-btn" title="Pin" onclick="togglePin()">📌</button>
-    <button class="btn-icon" id="label-btn" title="Print label" onclick="printLabel()">🏷</button>
-  </div>
+  <textarea id="desc-input" placeholder="Add a description…" rows="1" oninput="autoGrow(this)"></textarea>
 </div>
 
 <div class="actions-bar">
-  <label class="upload-label">
-    ↑ Upload
-    <input type="file" id="file-input" multiple hidden>
-  </label>
   <div class="folder-nav" id="folder-nav">
     <button class="folder-pill active" data-folder="" onclick="setFolder(this,'')">All Files</button>
   </div>
-  <select id="sort-select" onchange="renderFiles()">
+  <select id="sort-select" onchange="renderFileList()">
     <option value="name">Sort: Name</option>
     <option value="date">Sort: Date</option>
     <option value="size">Sort: Size</option>
@@ -195,18 +208,25 @@ textarea.field-input{resize:vertical;min-height:80px}
   <button id="new-folder-btn" onclick="addFolder()">+ Folder</button>
 </div>
 
-<div id="file-grid"></div>
+<div class="drop-zone" id="drop-zone">
+  <div class="drop-zone-icon">↑</div>
+  <div class="drop-zone-text">Drop files here · or <b>click to browse</b></div>
+  <input type="file" id="file-input" multiple hidden>
+</div>
 
-<details class="section" id="trash-section">
-  <summary>Trash <span class="summary-right" id="trash-count"></span></summary>
-  <div class="section-content">
-    <div class="trash-grid" id="trash-list"></div>
-  </div>
-</details>
+<div class="file-list-wrap" id="file-list-wrap">
+  <div class="file-list-empty" id="file-list-empty" style="display:none">No files here yet.</div>
+  <div id="file-list"></div>
+</div>
+
+<div class="gallery-section" id="gallery-section" style="display:none">
+  <div class="gallery-header" id="gallery-header">Images</div>
+  <div class="image-gallery" id="image-gallery"></div>
+</div>
 
 <details class="section" id="notes-section" open>
-  <summary>Notes <span class="summary-right" id="note-hint">Click to expand…</span></summary>
-  <div class="section-content">
+  <summary>Notes <span class="s-right" id="note-status-inline"></span></summary>
+  <div class="section-body">
     <div class="editor-toolbar">
       <button onclick="exec('bold')"><b>B</b></button>
       <button onclick="exec('italic')"><i>I</i></button>
@@ -224,25 +244,21 @@ textarea.field-input{resize:vertical;min-height:80px}
 </details>
 
 <details class="section" id="info-section">
-  <summary>Memo Info <span class="summary-right" id="uid-hint"></span></summary>
-  <div class="section-content">
+  <summary>Memo Info <span class="s-right" id="uid-hint"></span></summary>
+  <div class="section-body">
     <div class="field-group">
       <label class="field-label">Unique Identifier (UID)</label>
       <input type="text" class="field-input" id="uid-input" placeholder="e.g. STOR-001">
     </div>
     <div class="field-group">
-      <label class="field-label">Description</label>
-      <textarea class="field-input" id="desc-input" placeholder="What's in this memo…"></textarea>
-    </div>
-    <div class="field-group">
       <label class="field-label">Tags</label>
       <div class="tag-input-wrap" id="tag-wrap" onclick="document.getElementById('tag-text-input').focus()">
-        <input type="text" id="tag-text-input" placeholder="Add tag…">
+        <input type="text" id="tag-text-input" placeholder="Add tag, press Enter…">
       </div>
     </div>
     <div class="field-group">
       <label class="field-label">Cover Image</label>
-      <select id="cover-select"><option value="">— None —</option></select>
+      <select id="cover-select" class="field-input"><option value="">— None —</option></select>
     </div>
     <div class="field-group">
       <label class="field-label">Links</label>
@@ -250,6 +266,13 @@ textarea.field-input{resize:vertical;min-height:80px}
       <button id="add-link-btn" onclick="addLink()">+ Add link</button>
     </div>
     <button id="save-info-btn" onclick="saveInfo()">Save</button>
+  </div>
+</details>
+
+<details class="section" id="trash-section">
+  <summary>Trash <span class="s-right" id="trash-count"></span></summary>
+  <div class="section-body">
+    <div class="trash-grid" id="trash-list"></div>
   </div>
 </details>
 
@@ -278,6 +301,9 @@ textarea.field-input{resize:vertical;min-height:80px}
   </div>
 </div>
 
+<!-- Move menu (floating) -->
+<div id="move-menu" style="display:none;position:fixed;z-index:300;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:130px;overflow:hidden"></div>
+
 <script>
 const WORKER = 'https://memo-worker.ausz.workers.dev';
 let token = localStorage.getItem('memo_token') || '';
@@ -286,6 +312,7 @@ const memoId = params.get('id');
 
 let memo = null, meta = { files: {}, folders: [], trash: [] }, allFiles = [];
 let currentFolder = '', lbFiles = [], lbIdx = 0, modalFile = null;
+let currentTags = [];
 
 const IMG_EXTS = new Set(['jpg','jpeg','png','gif','webp','heic','avif','bmp','svg','tiff']);
 const isImg = n => IMG_EXTS.has(ext(n));
@@ -321,17 +348,20 @@ async function init() {
   const r = await fetch(WORKER + '?check=1&t=' + encodeURIComponent(token)).catch(() => null);
   if (!r || !r.ok) { document.getElementById('auth-overlay').classList.remove('hidden'); return; }
   document.getElementById('auth-overlay').classList.add('hidden');
-  await Promise.all([loadMemo(), loadFiles(), loadMeta(), loadNote()]);
+  await Promise.all([loadMemo(), loadMeta()]);
+  await loadFiles();
+  loadNote();
 }
 
 async function loadMemo() {
   memo = await (await api('/memos/' + memoId)).json();
   document.title = memo.memo_id;
   document.getElementById('memo-id-badge').textContent = memo.memo_id;
-  document.getElementById('title-input').value = memo.title;
+  document.getElementById('title-input').value = memo.title || '';
+  document.getElementById('desc-input').value = memo.description || '';
+  autoGrow(document.getElementById('desc-input'));
   document.getElementById('pin-btn').classList.toggle('active', !!memo.pinned);
   document.getElementById('uid-input').value = memo.uid || '';
-  document.getElementById('desc-input').value = memo.description || '';
   document.getElementById('uid-hint').textContent = memo.uid || '';
   renderTags(safeJson(memo.tags, []));
   renderLinks(safeJson(memo.links, []));
@@ -339,7 +369,8 @@ async function loadMemo() {
 
 async function loadFiles() {
   allFiles = await (await api('/memos/' + memoId + '/files')).json();
-  renderFiles();
+  renderFileList();
+  renderGallery();
   renderCoverSelect();
 }
 
@@ -356,11 +387,12 @@ async function loadNote() {
   const r = await api('/memos/' + memoId + '/note');
   const html = await r.text();
   document.getElementById('note-editor').innerHTML = html;
-  document.getElementById('note-status').textContent = html ? 'Saved' : 'No note yet';
-  document.getElementById('note-hint').textContent = html ? '' : 'Click to expand…';
+  const status = html ? 'Saved' : 'No note yet';
+  document.getElementById('note-status').textContent = status;
+  document.getElementById('note-status-inline').textContent = html ? '' : 'Click to expand…';
 }
 
-// ── File rendering ────────────────────────────────────────────────────────────
+// ── File list rendering ───────────────────────────────────────────────────────
 
 function getVisibleFiles() {
   let files = allFiles.filter(f => !f.key.startsWith('_'));
@@ -378,38 +410,60 @@ function getVisibleFiles() {
   return files;
 }
 
-function renderFiles() {
+function renderFileList() {
   const files = getVisibleFiles();
-  lbFiles = files.filter(f => isPreviewable(f.key));
-  const grid = document.getElementById('file-grid');
-  grid.innerHTML = '';
+  const list = document.getElementById('file-list');
+  const empty = document.getElementById('file-list-empty');
+  list.innerHTML = '';
+  empty.style.display = files.length ? 'none' : 'block';
+
   files.forEach(f => {
     const name = basename(f.key);
     const fm = meta.files[f.key] || {};
-    const card = document.createElement('div');
-    card.className = 'file-card';
-    let thumbHtml;
+    const folderPart = f.key.includes('/') ? f.key.split('/').slice(0, -1).join('/') : '';
+    const row = document.createElement('div');
+    row.className = 'file-row';
+
+    let thumbOrIcon;
     if (isImg(f.key)) {
-      thumbHtml = `<img src="${fileUrl(f.key)}" loading="lazy" alt="${esc(name)}">`;
-    } else if (isPdf(f.key)) {
-      thumbHtml = `<div class="file-icon">📄</div><div class="pdf-badge">PDF</div>`;
+      thumbOrIcon = `<img class="file-row-thumb" src="${fileUrl(f.key)}" loading="lazy" alt="" onclick="openLightbox('${esc(f.key)}')">`;
     } else {
-      thumbHtml = `<div class="file-icon">${fileIcon(f.key)}</div>`;
+      thumbOrIcon = `<div class="file-row-icon">${fileIcon(f.key)}</div>`;
     }
-    card.innerHTML = `
-      <div class="file-thumb" onclick="${isPreviewable(f.key) ? `openLightbox('${esc(f.key)}')` : `downloadFile('${esc(f.key)}')`}">
-        ${thumbHtml}
-      </div>
-      <div class="file-info">
-        <div class="file-name" title="${esc(f.key)}">${esc(name)}</div>
-        <div class="file-size">${fmtSize(f.size)}</div>
-        ${fm.caption ? `<div class="file-caption">${esc(fm.caption)}</div>` : ''}
-        <div class="file-actions">
-          <button onclick="openFileInfo('${esc(f.key)}')">ⓘ Info</button>
-          <button class="del-btn" onclick="trashFile('${esc(f.key)}')">🗑</button>
+
+    const folderLabel = folderPart ? `<span class="file-row-folder">${esc(folderPart)}</span>` : '';
+
+    row.innerHTML = `
+      ${thumbOrIcon}
+      <div class="file-row-name" title="${esc(f.key)}">${esc(name)}${fm.caption ? `<div style="font-size:.7rem;color:var(--muted);font-weight:400">${esc(fm.caption)}</div>` : ''}</div>
+      ${folderLabel}
+      <div class="file-row-size">${fmtSize(f.size)}</div>
+      <div class="file-row-actions">
+        <div class="move-wrap">
+          <button onclick="showMoveMenu(event,'${esc(f.key)}')">Move ▾</button>
         </div>
+        <button onclick="openFileInfo('${esc(f.key)}')">ⓘ</button>
+        ${isPreviewable(f.key) ? `<button onclick="${isPdf(f.key) ? `openLightbox('${esc(f.key)}')` : `openLightbox('${esc(f.key)}')`}">View</button>` : `<button onclick="downloadFile('${esc(f.key)}')">↓</button>`}
+        <button class="del-btn" onclick="trashFile('${esc(f.key)}')">🗑</button>
       </div>`;
-    grid.appendChild(card);
+    list.appendChild(row);
+  });
+}
+
+function renderGallery() {
+  const images = allFiles.filter(f => isImg(f.key) && !f.key.startsWith('_'));
+  lbFiles = images;
+  const section = document.getElementById('gallery-section');
+  const gallery = document.getElementById('image-gallery');
+  section.style.display = images.length ? '' : 'none';
+  document.getElementById('gallery-header').textContent = `Images (${images.length})`;
+  gallery.innerHTML = '';
+  images.forEach(f => {
+    const div = document.createElement('div');
+    div.className = 'gallery-thumb';
+    div.onclick = () => openLightbox(f.key);
+    div.innerHTML = `<img src="${fileUrl(f.key)}" loading="lazy" alt="${esc(basename(f.key))}">`;
+    gallery.appendChild(div);
   });
 }
 
@@ -418,28 +472,34 @@ function renderFolderNav() {
   nav.innerHTML = '<button class="folder-pill active" data-folder="" onclick="setFolder(this,\'\')">All Files</button>';
   (meta.folders || []).forEach(folder => {
     const b = document.createElement('button');
-    b.className = 'folder-pill'; b.dataset.folder = folder;
-    b.textContent = folder;
+    b.className = 'folder-pill'; b.dataset.folder = folder; b.textContent = folder;
     b.onclick = () => setFolder(b, folder);
     nav.appendChild(b);
   });
-  const tb = document.createElement('button');
-  tb.className = 'folder-pill trash-pill' + (currentFolder === '_trash' ? ' active' : '');
-  tb.textContent = '🗑 Trash';
-  tb.onclick = () => document.getElementById('trash-section').open = !document.getElementById('trash-section').open;
-  nav.appendChild(tb);
 }
 
 function setFolder(el, folder) {
   currentFolder = folder;
   document.querySelectorAll('.folder-pill').forEach(b => b.classList.toggle('active', b.dataset.folder === folder));
-  renderFiles();
+  renderFileList();
+}
+
+function renderCoverSelect() {
+  const sel = document.getElementById('cover-select');
+  const images = allFiles.filter(f => isImg(f.key) && !f.key.startsWith('_'));
+  sel.innerHTML = '<option value="">— None —</option>';
+  images.forEach(f => {
+    const o = document.createElement('option');
+    o.value = f.key; o.textContent = f.key;
+    if (memo && memo.cover_file === f.key) o.selected = true;
+    sel.appendChild(o);
+  });
 }
 
 function renderTrash() {
-  const list = document.getElementById('trash-list');
   const items = meta.trash || [];
   document.getElementById('trash-count').textContent = items.length ? `${items.length} item${items.length > 1 ? 's' : ''}` : '';
+  const list = document.getElementById('trash-list');
   list.innerHTML = '';
   items.forEach(item => {
     const div = document.createElement('div');
@@ -455,41 +515,85 @@ function renderTrash() {
   });
 }
 
-function renderCoverSelect() {
-  const sel = document.getElementById('cover-select');
-  const images = allFiles.filter(f => isImg(f.key) && !f.key.startsWith('_'));
-  sel.innerHTML = '<option value="">— None —</option>';
-  images.forEach(f => {
-    const o = document.createElement('option');
-    o.value = f.key; o.textContent = f.key;
-    if (memo && memo.cover_file === f.key) o.selected = true;
-    sel.appendChild(o);
-  });
-}
+// ── Upload (drop zone + input) ────────────────────────────────────────────────
 
-// ── Upload ────────────────────────────────────────────────────────────────────
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
 
-document.getElementById('file-input').addEventListener('change', async function() {
-  const files = Array.from(this.files);
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', async e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  await uploadFiles(Array.from(e.dataTransfer.files));
+});
+fileInput.addEventListener('change', async () => {
+  await uploadFiles(Array.from(fileInput.files));
+  fileInput.value = '';
+});
+
+async function uploadFiles(files) {
   if (!files.length) return;
-  this.closest('.upload-label').classList.add('uploading');
+  dropZone.querySelector('.drop-zone-text').textContent = `Uploading ${files.length} file${files.length > 1 ? 's' : ''}…`;
   for (const file of files) {
     const fd = new FormData();
     fd.append('file', file);
-    if (currentFolder && currentFolder !== '_trash') fd.append('folder', currentFolder);
+    if (currentFolder) fd.append('folder', currentFolder);
     try { await api('/memos/' + memoId + '/files', { method: 'POST', body: fd }); } catch {}
   }
-  this.value = '';
-  this.closest('.upload-label').classList.remove('uploading');
+  dropZone.querySelector('.drop-zone-text').innerHTML = 'Drop files here · or <b>click to browse</b>';
   await loadFiles();
-});
+}
+
+// ── Move file ─────────────────────────────────────────────────────────────────
+
+let activeMoveMenu = null;
+
+function showMoveMenu(e, key) {
+  e.stopPropagation();
+  const menu = document.getElementById('move-menu');
+  const btn = e.currentTarget;
+  const rect = btn.getBoundingClientRect();
+  menu.style.display = 'block';
+  menu.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+  menu.style.left = Math.min(rect.left, window.innerWidth - 140) + 'px';
+  activeMoveMenu = key;
+
+  const folders = meta.folders || [];
+  const currentFileFolder = key.includes('/') ? key.split('/').slice(0, -1).join('/') : '';
+  const opts = [];
+  if (currentFileFolder !== '') opts.push({ label: '📁 Root', folder: '' });
+  folders.forEach(f => { if (f !== currentFileFolder) opts.push({ label: '📁 ' + f, folder: f }); });
+
+  menu.innerHTML = opts.length
+    ? opts.map(o => `<button onclick="moveFile('${esc(activeMoveMenu)}','${esc(o.folder)}')">${esc(o.label)}</button>`).join('')
+    : '<button disabled style="color:var(--muted);cursor:default">No other folders</button>';
+}
+
+document.addEventListener('click', () => { document.getElementById('move-menu').style.display = 'none'; });
+
+async function moveFile(srcKey, dstFolder) {
+  document.getElementById('move-menu').style.display = 'none';
+  try {
+    const r = await api('/memos/' + memoId + '/move', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ srcKey, dstFolder }),
+    });
+    const { key: newKey } = await r.json();
+    // Update meta.files if caption/tags exist
+    if (meta.files[srcKey]) { meta.files[newKey] = meta.files[srcKey]; delete meta.files[srcKey]; await saveMeta(); }
+    // Update cover_file if needed
+    if (memo && memo.cover_file === srcKey) { memo.cover_file = newKey; await saveInfo(); }
+    await loadFiles();
+  } catch {}
+}
 
 // ── Trash / restore ───────────────────────────────────────────────────────────
 
 async function trashFile(key) {
-  if (!confirm('Move "' + basename(key) + '" to trash?')) return;
+  if (!confirm(`Move "${basename(key)}" to trash?`)) return;
   try {
-    const r = await api('/memos/' + memoId + '/trash', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ key }) });
+    const r = await api('/memos/' + memoId + '/trash', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key}) });
     const { trashKey } = await r.json();
     meta.trash = meta.trash || [];
     meta.trash.push({ trashKey, origKey: key, name: basename(key), deletedAt: new Date().toISOString() });
@@ -502,7 +606,7 @@ async function trashFile(key) {
 
 async function restoreFile(trashKey, origKey) {
   try {
-    await api('/memos/' + memoId + '/restore', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ trashKey, origKey }) });
+    await api('/memos/' + memoId + '/restore', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({trashKey, origKey}) });
     meta.trash = meta.trash.filter(i => i.trashKey !== trashKey);
     await saveMeta();
     await loadFiles();
@@ -511,9 +615,9 @@ async function restoreFile(trashKey, origKey) {
 }
 
 async function permDelete(trashKey, origKey) {
-  if (!confirm('Permanently delete "' + basename(origKey) + '"? This cannot be undone.')) return;
+  if (!confirm(`Permanently delete "${basename(origKey)}"? This cannot be undone.`)) return;
   try {
-    await api('/memos/' + memoId + '/files/' + encodeURIComponent(trashKey), { method:'DELETE' });
+    await api('/memos/' + memoId + '/files/' + trashKey.split('/').map(encodeURIComponent).join('/'), { method:'DELETE' });
     meta.trash = meta.trash.filter(i => i.trashKey !== trashKey);
     await saveMeta();
     renderTrash();
@@ -524,43 +628,28 @@ async function permDelete(trashKey, origKey) {
 
 function openLightbox(key) {
   lbIdx = lbFiles.findIndex(f => f.key === key);
+  if (lbIdx === -1) { lbFiles = allFiles.filter(f => isPreviewable(f.key)); lbIdx = lbFiles.findIndex(f => f.key === key); }
   if (lbIdx === -1) lbIdx = 0;
   showLightbox();
 }
 
 function showLightbox() {
-  const f = lbFiles[lbIdx];
-  if (!f) return;
-  const box = document.getElementById('lightbox');
-  const content = document.getElementById('lb-content');
-  box.classList.remove('hidden');
+  const f = lbFiles[lbIdx]; if (!f) return;
+  document.getElementById('lightbox').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
-  if (isPdf(f.key)) {
-    content.innerHTML = `<iframe src="${fileUrl(f.key)}"></iframe>`;
-  } else {
-    content.innerHTML = `<img src="${fileUrl(f.key)}" alt="${esc(basename(f.key))}">`;
-  }
+  const content = document.getElementById('lb-content');
+  content.innerHTML = isPdf(f.key) ? `<iframe src="${fileUrl(f.key)}"></iframe>` : `<img src="${fileUrl(f.key)}" alt="${esc(basename(f.key))}">`;
   document.getElementById('lb-caption').textContent = basename(f.key);
   document.getElementById('lb-counter').textContent = lbFiles.length > 1 ? `${lbIdx + 1} / ${lbFiles.length}` : '';
-  document.getElementById('lb-prev').style.display = lbFiles.length > 1 ? '' : 'none';
-  document.getElementById('lb-next').style.display = lbFiles.length > 1 ? '' : 'none';
+  const multi = lbFiles.length > 1;
+  document.getElementById('lb-prev').style.display = multi ? '' : 'none';
+  document.getElementById('lb-next').style.display = multi ? '' : 'none';
 }
 
-function closeLightbox() {
-  document.getElementById('lightbox').classList.add('hidden');
-  document.getElementById('lb-content').innerHTML = '';
-  document.body.style.overflow = '';
-}
+function closeLightbox() { document.getElementById('lightbox').classList.add('hidden'); document.getElementById('lb-content').innerHTML = ''; document.body.style.overflow = ''; }
+function lbNav(dir) { lbIdx = (lbIdx + dir + lbFiles.length) % lbFiles.length; showLightbox(); }
 
-function lbNav(dir) {
-  lbIdx = (lbIdx + dir + lbFiles.length) % lbFiles.length;
-  showLightbox();
-}
-
-document.getElementById('lightbox').addEventListener('click', e => {
-  if (e.target === document.getElementById('lightbox')) closeLightbox();
-});
-
+document.getElementById('lightbox').addEventListener('click', e => { if (e.target === document.getElementById('lightbox')) closeLightbox(); });
 document.addEventListener('keydown', e => {
   if (document.getElementById('lightbox').classList.contains('hidden')) return;
   if (e.key === 'Escape') closeLightbox();
@@ -568,11 +657,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') lbNav(1);
 });
 
-function downloadFile(key) {
-  const a = document.createElement('a');
-  a.href = fileUrl(key); a.download = basename(key);
-  a.click();
-}
+function downloadFile(key) { const a = document.createElement('a'); a.href = fileUrl(key); a.download = basename(key); a.click(); }
 
 // ── File info modal ───────────────────────────────────────────────────────────
 
@@ -583,9 +668,7 @@ function openFileInfo(key) {
   document.getElementById('modal-tags').value = (fm.tags || []).join(', ');
   document.getElementById('info-modal').classList.remove('hidden');
 }
-
 function closeModal() { document.getElementById('info-modal').classList.add('hidden'); modalFile = null; }
-
 async function saveFileInfo() {
   if (!modalFile) return;
   meta.files[modalFile] = {
@@ -594,7 +677,7 @@ async function saveFileInfo() {
   };
   await saveMeta();
   closeModal();
-  renderFiles();
+  renderFileList();
 }
 
 // ── Folders ───────────────────────────────────────────────────────────────────
@@ -603,7 +686,7 @@ async function addFolder() {
   const name = prompt('Folder name:');
   if (!name) return;
   const safe = name.replace(/[^a-zA-Z0-9_\- ]/g, '').trim();
-  if (!safe || meta.folders.includes(safe)) return;
+  if (!safe || (meta.folders || []).includes(safe)) return;
   meta.folders.push(safe);
   await saveMeta();
   renderFolderNav();
@@ -611,22 +694,15 @@ async function addFolder() {
 
 // ── Notes ─────────────────────────────────────────────────────────────────────
 
-function exec(cmd) {
-  document.getElementById('note-editor').focus();
-  document.execCommand(cmd, false, null);
-}
-function clearNote() {
-  if (!confirm('Clear the note?')) return;
-  document.getElementById('note-editor').innerHTML = '';
-  document.getElementById('note-status').textContent = 'Cleared';
-}
+function exec(cmd) { document.getElementById('note-editor').focus(); document.execCommand(cmd, false, null); }
+function clearNote() { if (!confirm('Clear the note?')) return; document.getElementById('note-editor').innerHTML = ''; document.getElementById('note-status').textContent = 'Cleared'; }
 async function saveNote() {
   const html = document.getElementById('note-editor').innerHTML;
   document.getElementById('note-status').textContent = 'Saving…';
   try {
-    await api('/memos/' + memoId + '/note', { method:'PUT', headers:{'Content-Type':'text/plain'}, body: html });
+    await api('/memos/' + memoId + '/note', { method:'PUT', headers:{'Content-Type':'text/plain'}, body:html });
     document.getElementById('note-status').textContent = 'Saved ✓';
-  } catch { document.getElementById('note-status').textContent = 'Error saving'; }
+  } catch { document.getElementById('note-status').textContent = 'Error'; }
 }
 
 // ── Info / Pin ────────────────────────────────────────────────────────────────
@@ -642,26 +718,24 @@ async function saveInfo() {
   const links = getLinksFromUI();
   try {
     await api('/memos/' + memoId, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      method:'PUT', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         title: document.getElementById('title-input').value.trim(),
         description: document.getElementById('desc-input').value.trim(),
         uid: document.getElementById('uid-input').value.trim(),
         cover_file: document.getElementById('cover-select').value,
-        tags, links,
-        pinned: memo ? memo.pinned : 0,
+        tags, links, pinned: memo ? memo.pinned : 0,
       }),
     });
-    memo.uid = document.getElementById('uid-input').value.trim();
-    document.getElementById('uid-hint').textContent = memo.uid;
+    if (memo) { memo.uid = document.getElementById('uid-input').value.trim(); document.getElementById('uid-hint').textContent = memo.uid; }
   } catch {}
 }
 
 document.getElementById('title-input').addEventListener('change', saveInfo);
+document.getElementById('desc-input').addEventListener('change', saveInfo);
 
 // ── Tags UI ───────────────────────────────────────────────────────────────────
 
-let currentTags = [];
 function renderTags(tags) {
   currentTags = [...tags];
   const wrap = document.getElementById('tag-wrap');
@@ -675,7 +749,6 @@ function renderTags(tags) {
 }
 function removeTag(t) { renderTags(currentTags.filter(x => x !== t)); }
 function getTagsFromUI() { return [...currentTags]; }
-
 document.getElementById('tag-text-input').addEventListener('keydown', e => {
   if (e.key === 'Enter' || e.key === ',') {
     e.preventDefault();
@@ -693,34 +766,25 @@ function renderLinks(links) {
   links.forEach((l, i) => {
     const row = document.createElement('div');
     row.className = 'link-row';
-    row.innerHTML = `
-      <input type="text" placeholder="Label" value="${esc(l.label)}" data-link-label="${i}">
-      <input type="url" placeholder="URL" value="${esc(l.url)}" data-link-url="${i}">
+    row.innerHTML = `<input type="text" placeholder="Label" value="${esc(l.label)}" data-idx="${i}" data-type="label">
+      <input type="url" placeholder="URL" value="${esc(l.url)}" data-idx="${i}" data-type="url">
       <button onclick="removeLink(${i})">✕</button>`;
     list.appendChild(row);
   });
 }
-function addLink() {
-  const links = getLinksFromUI();
-  links.push({ label: '', url: '' });
-  renderLinks(links);
-}
-function removeLink(i) { const l = getLinksFromUI(); l.splice(i, 1); renderLinks(l); }
+function addLink() { renderLinks([...getLinksFromUI(), { label:'', url:'' }]); }
+function removeLink(i) { const l = getLinksFromUI(); l.splice(i,1); renderLinks(l); }
 function getLinksFromUI() {
-  const list = document.getElementById('links-list');
-  const rows = list.querySelectorAll('.link-row');
-  return Array.from(rows).map(row => ({
-    label: (row.querySelector('[data-link-label]') || {}).value || '',
-    url: (row.querySelector('[data-link-url]') || {}).value || '',
+  return Array.from(document.querySelectorAll('.link-row')).map(row => ({
+    label: (row.querySelector('[data-type="label"]') || {}).value || '',
+    url: (row.querySelector('[data-type="url"]') || {}).value || '',
   })).filter(l => l.url);
 }
 
-// ── Meta persistence ──────────────────────────────────────────────────────────
+// ── Meta ──────────────────────────────────────────────────────────────────────
 
 async function saveMeta() {
-  await api('/memos/' + memoId + '/meta', {
-    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(meta),
-  });
+  await api('/memos/' + memoId + '/meta', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(meta) });
 }
 
 // ── Print label ───────────────────────────────────────────────────────────────
@@ -728,37 +792,34 @@ async function saveMeta() {
 function printLabel() {
   const uid = document.getElementById('uid-input').value.trim() || '—';
   const title = document.getElementById('title-input').value.trim() || 'Untitled';
-  const memoIdText = document.getElementById('memo-id-badge').textContent;
+  const mid = document.getElementById('memo-id-badge').textContent;
   const w = window.open('', '_blank', 'width=400,height=300');
   w.document.write(`<!DOCTYPE html><html><head><title>Label</title>
-    <style>body{font-family:monospace;padding:20px;display:flex;flex-direction:column;align-items:center;gap:8px}
-    .id{font-size:1.1rem;font-weight:bold}.uid{font-size:.9rem;color:#555}.title{font-size:.85rem}
+    <style>body{font-family:monospace;padding:24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+    .mid{font-size:1.2rem;font-weight:bold}.uid{font-size:1rem;color:#444}.title{font-size:.9rem;color:#666}
     @media print{button{display:none}}</style></head><body>
-    <div class="id">${esc(memoIdText)}</div>
+    <div class="mid">${esc(mid)}</div>
     <div class="uid">${esc(uid)}</div>
     <div class="title">${esc(title)}</div>
-    <button onclick="window.print()">Print</button>
-    </body></html>`);
+    <button onclick="window.print()">🖨 Print</button></body></html>`);
   w.document.close();
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function safeJson(s, fallback) { try { return typeof s === 'string' ? JSON.parse(s) : (s || fallback); } catch { return fallback; } }
+function autoGrow(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+function safeJson(s, fb) { try { return typeof s === 'string' ? JSON.parse(s) : (s || fb); } catch { return fb; } }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmtDate(iso) { return new Date(iso).toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' }); }
-function fmtSize(b) {
-  if (b < 1024) return b + ' B';
-  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
-  return (b/1048576).toFixed(1) + ' MB';
-}
+function fmtDate(iso) { return new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }
+function fmtSize(b) { if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
 function fileIcon(name) {
   const e = ext(name);
-  if (['mp4','mov','avi','mkv','webm'].includes(e)) return '🎬';
-  if (['mp3','wav','aac','flac'].includes(e)) return '🎵';
-  if (['zip','tar','gz','rar'].includes(e)) return '📦';
-  if (['doc','docx'].includes(e)) return '📝';
-  if (['xls','xlsx','csv'].includes(e)) return '📊';
+  if(isPdf(name)) return '📄';
+  if(['mp4','mov','avi','mkv','webm'].includes(e)) return '🎬';
+  if(['mp3','wav','aac','flac'].includes(e)) return '🎵';
+  if(['zip','tar','gz','rar'].includes(e)) return '📦';
+  if(['doc','docx'].includes(e)) return '📝';
+  if(['xls','xlsx','csv'].includes(e)) return '📊';
   return '📄';
 }
 
