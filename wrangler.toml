@@ -1,0 +1,13 @@
+name = "memo-worker"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+account_id = "142bbf41fc952adb0ceb663375ef50d8"
+
+[[d1_databases]]
+binding = "MEMO_D1"
+database_name = "memo-db"
+database_id = "2554e206-c3d9-45a9-a5b6-96e06e428e1d"
+
+[[r2_buckets]]
+binding = "MEMO_R2"
+bucket_name = "memo-files"
