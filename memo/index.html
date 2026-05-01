@@ -236,12 +236,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #hover-preview{position:fixed;z-index:900;background:#fff;border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.22);overflow:hidden;pointer-events:none;display:none;width:260px;height:260px}
 #hover-preview img{width:100%;height:100%;object-fit:contain;display:block}
 
+@page{margin:1.5cm}
 @media print{
   body>*{display:none !important}
-  #print-label{display:block !important;text-align:center;font-family:'Courier New',monospace;padding:30px}
-  #print-label .pl-id{font-size:1.1rem;font-weight:bold;letter-spacing:.08em;margin-top:8px}
-  #print-label .pl-uid{font-size:.95rem;margin-top:4px}
-  #print-label .pl-title{font-size:.82rem;color:#555;margin-top:4px}
+  #print-label{
+    display:flex !important;flex-direction:column;align-items:center;justify-content:flex-start;
+    text-align:center;font-family:'Courier New',monospace;padding-top:20px
+  }
+  #print-label img{display:block;width:220px;height:220px;margin:0 auto 12px}
+  #print-label .pl-id{font-size:1.1rem;font-weight:bold;letter-spacing:.08em;color:#000;margin-bottom:4px}
+  #print-label .pl-uid{font-size:.95rem;color:#000}
+  #print-label .pl-title{display:none}
 }
 </style>
 </head>
@@ -1196,7 +1201,7 @@ function printLabelModal() {
   document.getElementById('print-title').style.display = 'none';
   const pz = document.getElementById('print-label');
   let imgEl = pz.querySelector('img');
-  if (!imgEl) { imgEl = document.createElement('img'); imgEl.style.width = '200px'; pz.insertBefore(imgEl, pz.firstChild); }
+  if (!imgEl) { imgEl = document.createElement('img'); imgEl.style.cssText = 'display:block;margin:0 auto;width:220px'; pz.insertBefore(imgEl, pz.firstChild); }
   imgEl.src = qrSrc;
   window.print();
 }
