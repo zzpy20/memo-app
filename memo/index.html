@@ -1177,8 +1177,7 @@ function printLabel() {
   document.getElementById('lbl-id').textContent = mid;
   document.getElementById('lbl-uid').textContent = uid;
   document.getElementById('lbl-uid').style.display = uid ? '' : 'none';
-  document.getElementById('lbl-title').textContent = title;
-  document.getElementById('lbl-title').style.display = title ? '' : 'none';
+  document.getElementById('lbl-title').style.display = 'none';
   document.getElementById('qr-img').src = qrUrl;
   document.getElementById('label-modal').classList.remove('hidden');
 }
@@ -1194,8 +1193,7 @@ function printLabelModal() {
   document.getElementById('print-id').textContent = mid;
   document.getElementById('print-uid').textContent = uid;
   document.getElementById('print-uid').style.display = uid ? '' : 'none';
-  document.getElementById('print-title').textContent = title;
-  document.getElementById('print-title').style.display = title ? '' : 'none';
+  document.getElementById('print-title').style.display = 'none';
   const pz = document.getElementById('print-label');
   let imgEl = pz.querySelector('img');
   if (!imgEl) { imgEl = document.createElement('img'); imgEl.style.width = '200px'; pz.insertBefore(imgEl, pz.firstChild); }
