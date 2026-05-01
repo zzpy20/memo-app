@@ -6,7 +6,6 @@
 <title>Memo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -233,6 +232,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #lb-caption{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.75);font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80vw}
 #lb-counter{position:absolute;top:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.55);font-size:.78rem}
 
+/* Hover preview */
+#hover-preview{position:fixed;z-index:900;background:#fff;border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.22);overflow:hidden;pointer-events:none;display:none;width:260px;height:260px}
+#hover-preview img{width:100%;height:100%;object-fit:contain;display:block}
+
 @media print{
   body>*{display:none !important}
   #print-label{display:block !important;text-align:center;font-family:'Courier New',monospace;padding:30px}
@@ -407,7 +410,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <div class="modal-overlay hidden" id="label-modal">
   <div class="modal-box" style="max-width:320px;text-align:center">
     <div class="modal-hdr" style="justify-content:flex-end"><button class="modal-close" onclick="closeLabelModal()">✕</button></div>
-    <canvas id="qr-canvas" style="display:block;margin:0 auto 4px"></canvas>
+    <img id="qr-img" style="display:block;margin:0 auto 4px;width:200px;height:200px" alt="QR code">
     <div id="lbl-id" style="font-family:'DM Mono',monospace;font-size:1rem;font-weight:700;letter-spacing:.08em;margin-top:6px"></div>
     <div id="lbl-uid" style="font-size:.9rem;color:var(--muted);margin-top:4px;font-family:'DM Mono',monospace"></div>
     <div id="lbl-title" style="font-size:.82rem;color:var(--muted);margin-top:6px;word-break:break-word"></div>
@@ -442,6 +445,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div id="lb-caption"></div>
   <div id="lb-counter"></div>
 </div>
+
+<!-- Hover preview -->
+<div id="hover-preview"><img src="" alt=""></div>
 
 <!-- Float menu -->
 <div class="float-menu" id="float-menu"></div>
@@ -621,7 +627,7 @@ function renderFileList() {
       card.className = 'file-grid-card' + (selectedFiles.has(f.key) ? ' selected' : '');
       card.dataset.key = f.key;
       const thumbHtml = isImg(f.key)
-        ? `<img src="${fileUrl(f.key)}" loading="lazy" alt="">`
+        ? `<img src="${fileUrl(f.key)}" loading="lazy" alt="" data-preview="1">`
         : `<div class="grid-icon">${fileIcon(f.key)}</div>`;
       card.innerHTML = `
         <div class="grid-cb" onclick="toggleSelect('${esc(f.key)}');event.stopPropagation()">✓</div>
@@ -662,7 +668,7 @@ function renderFileList() {
       row.className = 'file-row' + (selectedFiles.has(f.key) ? ' selected' : '');
       row.dataset.key = f.key;
       const thumbHtml = isImg(f.key)
-        ? `<img class="file-row-thumb" src="${fileUrl(f.key)}" loading="lazy" alt="" onclick="openLightbox('${esc(f.key)}')">`
+        ? `<img class="file-row-thumb" src="${fileUrl(f.key)}" loading="lazy" alt="" data-preview="1" onclick="openLightbox('${esc(f.key)}')">`
         : `<div class="file-row-icon">${fileIcon(f.key)}</div>`;
       row.innerHTML = `
         <div class="file-cb" onclick="toggleSelect('${esc(f.key)}')">✓</div>
@@ -1162,48 +1168,38 @@ async function saveMeta() {
 // ── Label / QR ────────────────────────────────────────────────────────────────
 
 function printLabel() {
-  if (typeof QRCode === 'undefined') { alert('QR code library not loaded. Check your internet connection.'); return; }
   const uid = document.getElementById('uid-input').value.trim();
   const title = document.getElementById('title-input').value.trim();
   const mid = document.getElementById('memo-id-badge').textContent;
   const qrData = mid + (uid ? '\n' + uid : '');
+  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=10&data=' + encodeURIComponent(qrData);
 
   document.getElementById('lbl-id').textContent = mid;
   document.getElementById('lbl-uid').textContent = uid;
   document.getElementById('lbl-uid').style.display = uid ? '' : 'none';
   document.getElementById('lbl-title').textContent = title;
   document.getElementById('lbl-title').style.display = title ? '' : 'none';
-
-  const canvas = document.getElementById('qr-canvas');
-  QRCode.toCanvas(canvas, qrData, { width: 200, margin: 2 }, err => {
-    if (err) { console.error(err); alert('QR generation failed: ' + err.message); }
-  });
+  document.getElementById('qr-img').src = qrUrl;
   document.getElementById('label-modal').classList.remove('hidden');
 }
 
 function closeLabelModal() { document.getElementById('label-modal').classList.add('hidden'); }
 
 function printLabelModal() {
-  const uid = document.getElementById('lbl-uid').textContent;
   const mid = document.getElementById('lbl-id').textContent;
+  const uid = document.getElementById('lbl-uid').textContent;
   const title = document.getElementById('lbl-title').textContent;
-  const canvas = document.getElementById('qr-canvas');
-  const img = canvas.toDataURL();
+  const qrSrc = document.getElementById('qr-img').src;
 
-  // Populate print zone and trigger print
   document.getElementById('print-id').textContent = mid;
   document.getElementById('print-uid').textContent = uid;
   document.getElementById('print-uid').style.display = uid ? '' : 'none';
   document.getElementById('print-title').textContent = title;
   document.getElementById('print-title').style.display = title ? '' : 'none';
-
-  // Replace canvas in print zone with img
   const pz = document.getElementById('print-label');
-  pz.querySelector('canvas,img')?.remove();
-  const imgEl = document.createElement('img');
-  imgEl.src = img; imgEl.style.width = '200px'; imgEl.style.height = '200px';
-  pz.insertBefore(imgEl, pz.firstChild);
-
+  let imgEl = pz.querySelector('img');
+  if (!imgEl) { imgEl = document.createElement('img'); imgEl.style.width = '200px'; pz.insertBefore(imgEl, pz.firstChild); }
+  imgEl.src = qrSrc;
   window.print();
 }
 
@@ -1224,6 +1220,38 @@ function fileIcon(name) {
   if (['xls','xlsx','csv'].includes(e)) return '📊';
   return '📄';
 }
+
+// ── Hover image preview ───────────────────────────────────────────────────────
+
+const hoverBox = document.getElementById('hover-preview');
+const hoverImg = hoverBox.querySelector('img');
+
+function positionHover(e) {
+  const w = 260, h = 260, pad = 16;
+  let left = e.clientX + pad;
+  let top = e.clientY - h / 2;
+  if (left + w > window.innerWidth) left = e.clientX - w - pad;
+  top = Math.max(pad, Math.min(top, window.innerHeight - h - pad));
+  hoverBox.style.left = left + 'px';
+  hoverBox.style.top = top + 'px';
+}
+
+document.addEventListener('mouseover', e => {
+  if (e.target.dataset && e.target.dataset.preview && e.target.src) {
+    hoverImg.src = e.target.src;
+    hoverBox.style.display = 'block';
+    positionHover(e);
+  }
+});
+document.addEventListener('mouseout', e => {
+  if (e.target.dataset && e.target.dataset.preview) {
+    hoverBox.style.display = 'none';
+    hoverImg.src = '';
+  }
+});
+document.addEventListener('mousemove', e => {
+  if (hoverBox.style.display !== 'none') positionHover(e);
+});
 
 init();
 </script>
