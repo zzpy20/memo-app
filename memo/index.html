@@ -236,18 +236,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #hover-preview{position:fixed;z-index:900;background:#fff;border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.22);overflow:hidden;pointer-events:none;display:none;width:260px;height:260px}
 #hover-preview img{width:100%;height:100%;object-fit:contain;display:block}
 
-@page{margin:1.5cm}
-@media print{
-  body>*{display:none !important}
-  #print-label{
-    display:flex !important;flex-direction:column;align-items:center;justify-content:flex-start;
-    text-align:center;font-family:'Courier New',monospace;padding-top:20px
-  }
-  #print-label img{display:block;width:220px;height:220px;margin:0 auto 12px}
-  #print-label .pl-id{font-size:1.1rem;font-weight:bold;letter-spacing:.08em;color:#000;margin-bottom:4px}
-  #print-label .pl-uid{font-size:.95rem;color:#000}
-  #print-label .pl-title{display:none}
-}
 </style>
 </head>
 <body>
@@ -457,13 +445,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <!-- Float menu -->
 <div class="float-menu" id="float-menu"></div>
 
-<!-- Print zone (visible only when printing) -->
-<div id="print-label" style="display:none">
-  <canvas id="print-qr"></canvas>
-  <div class="pl-id" id="print-id"></div>
-  <div class="pl-uid" id="print-uid"></div>
-  <div class="pl-title" id="print-title"></div>
-</div>
 
 <script>
 const WORKER = 'https://memo-worker.ausz.workers.dev';
@@ -1192,18 +1173,27 @@ function closeLabelModal() { document.getElementById('label-modal').classList.ad
 function printLabelModal() {
   const mid = document.getElementById('lbl-id').textContent;
   const uid = document.getElementById('lbl-uid').textContent;
-  const title = document.getElementById('lbl-title').textContent;
-  const qrSrc = document.getElementById('qr-img').src;
-
-  document.getElementById('print-id').textContent = mid;
-  document.getElementById('print-uid').textContent = uid;
-  document.getElementById('print-uid').style.display = uid ? '' : 'none';
-  document.getElementById('print-title').style.display = 'none';
-  const pz = document.getElementById('print-label');
-  let imgEl = pz.querySelector('img');
-  if (!imgEl) { imgEl = document.createElement('img'); imgEl.style.cssText = 'display:block;margin:0 auto;width:220px'; pz.insertBefore(imgEl, pz.firstChild); }
-  imgEl.src = qrSrc;
-  window.print();
+  const qrData = mid + (uid ? '\n' + uid : '');
+  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=' + encodeURIComponent(qrData);
+  const w = window.open('', '_blank', 'width=380,height=500,menubar=no,toolbar=no,location=no,status=no');
+  w.document.write(`<!DOCTYPE html><html><head><title>Label</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Courier New',monospace;background:#f5f5f5;display:flex;align-items:flex-start;justify-content:center;padding:30px}
+.card{background:#fff;border-radius:16px;padding:24px 28px;text-align:center;box-shadow:0 2px 16px rgba(0,0,0,.12)}
+.card img{display:block;width:240px;height:240px;margin:0 auto 14px}
+.lbl-id{font-size:1.05rem;font-weight:bold;letter-spacing:.08em;color:#111}
+.lbl-uid{font-size:.88rem;color:#555;margin-top:5px;font-style:italic}
+.btn{margin-top:18px;padding:8px 24px;background:#1c1917;color:#fff;border:none;border-radius:8px;font-size:.9rem;cursor:pointer;font-family:inherit}
+@media print{.btn{display:none}body{background:#fff;padding:10px}.card{box-shadow:none;border-radius:0}}
+</style></head><body>
+<div class="card">
+  <img src="${qrUrl}" alt="QR code">
+  <div class="lbl-id">${esc(mid)}</div>
+  ${uid ? `<div class="lbl-uid">${esc(uid)}</div>` : ''}
+  <button class="btn" onclick="window.print()">🖨 Print</button>
+</div>
+</body></html>`);
+  w.document.close();
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
