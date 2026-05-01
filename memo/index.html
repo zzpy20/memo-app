@@ -11,10 +11,10 @@
 :root{
   --bg:#f5f5f4;--surface:#fff;--border:#e7e5e4;
   --text:#1c1917;--muted:#78716c;--accent:#6366f1;--accent-hover:#4f46e5;
-  --danger:#ef4444;--success:#22c55e;--pin:#f59e0b;
+  --danger:#ef4444;--success:#22c55e;
   --radius:10px;--shadow:0 1px 3px rgba(0,0,0,.08);
 }
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:70px}
 
 /* Auth */
 #auth-overlay{position:fixed;inset:0;background:#1c1917;display:flex;align-items:center;justify-content:center;z-index:2000}
@@ -27,7 +27,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 /* Page header */
 .page-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
-.back-link{color:var(--muted);text-decoration:none;font-size:.85rem;padding:4px 8px;border-radius:6px;flex-shrink:0;white-space:nowrap}
+.back-link{color:var(--muted);text-decoration:none;font-size:.85rem;padding:4px 8px;border-radius:6px;flex-shrink:0}
 .back-link:hover{background:var(--bg);color:var(--text)}
 .memo-id-badge{font-family:'DM Mono',monospace;font-size:.75rem;color:var(--accent);font-weight:500;background:#ede9fe;padding:3px 10px;border-radius:20px;flex-shrink:0;white-space:nowrap}
 .header-spacer{flex:1}
@@ -39,58 +39,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .title-section{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px 14px}
 #title-input{width:100%;border:none;outline:none;font-size:1.5rem;font-weight:600;font-family:inherit;color:var(--text);background:transparent;margin-bottom:6px;display:block}
 #title-input::placeholder{color:#ccc;font-weight:400}
-#desc-input{width:100%;border:none;outline:none;font-size:.9rem;font-family:inherit;color:var(--muted);background:transparent;resize:none;min-height:20px;line-height:1.5;display:block}
+#desc-input{width:100%;border:none;outline:none;font-size:.9rem;font-family:inherit;color:var(--muted);background:transparent;resize:none;min-height:20px;line-height:1.5;display:block;overflow:hidden}
 #desc-input::placeholder{color:#ccc}
 
-/* Actions bar */
-.actions-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.folder-nav{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
-.folder-pill{padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;font-size:.8rem;font-family:inherit;cursor:pointer;color:var(--muted);white-space:nowrap}
-.folder-pill:hover{border-color:var(--accent);color:var(--accent)}
-.folder-pill.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-#sort-select{padding:5px 10px;border:1px solid var(--border);border-radius:7px;font-size:.8rem;font-family:inherit;background:var(--surface);color:var(--text);flex-shrink:0}
-#new-folder-btn{padding:5px 12px;border:1px solid var(--border);border-radius:7px;font-size:.8rem;font-family:inherit;cursor:pointer;background:transparent;color:var(--muted);flex-shrink:0;white-space:nowrap}
-#new-folder-btn:hover{border-color:var(--accent);color:var(--accent)}
-
-/* Drop zone */
-.drop-zone{margin:16px 20px;border:2px dashed var(--border);border-radius:var(--radius);padding:28px 20px;text-align:center;cursor:pointer;transition:all .15s;background:var(--surface)}
-.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:#f5f3ff}
-.drop-zone-icon{font-size:1.6rem;margin-bottom:6px;opacity:.5}
-.drop-zone-text{font-size:.85rem;color:var(--muted)}
-.drop-zone-text b{color:var(--accent);font-weight:500}
-
-/* File list */
-.file-list-wrap{margin:0 20px 16px;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
-.file-list-empty{padding:24px;text-align:center;color:var(--muted);font-size:.85rem}
-.file-row{display:flex;align-items:center;padding:9px 14px;gap:10px;border-bottom:1px solid var(--border);transition:background .1s}
-.file-row:last-child{border-bottom:none}
-.file-row:hover{background:#fafaf9}
-.file-row-icon{font-size:1.1rem;flex-shrink:0;width:22px;text-align:center}
-.file-row-thumb{width:32px;height:32px;border-radius:5px;object-fit:cover;flex-shrink:0;cursor:pointer}
-.file-row-name{flex:1;font-size:.83rem;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.file-row-folder{font-size:.73rem;color:var(--muted);background:var(--bg);padding:2px 8px;border-radius:10px;flex-shrink:0;white-space:nowrap}
-.file-row-size{font-size:.73rem;color:var(--muted);flex-shrink:0;white-space:nowrap;min-width:52px;text-align:right}
-.file-row-actions{display:flex;gap:4px;flex-shrink:0}
-.file-row-actions button{padding:3px 8px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;cursor:pointer;background:transparent;font-family:inherit;color:var(--muted);white-space:nowrap}
-.file-row-actions button:hover{border-color:var(--accent);color:var(--accent)}
-.file-row-actions .del-btn:hover{border-color:var(--danger);color:var(--danger)}
-
-/* Move dropdown */
-.move-wrap{position:relative}
-.move-menu{position:absolute;right:0;top:100%;margin-top:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:200;min-width:130px;overflow:hidden}
-.move-menu button{display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:transparent;font-size:.82rem;font-family:inherit;cursor:pointer;color:var(--text)}
-.move-menu button:hover{background:var(--bg);color:var(--accent)}
-.move-menu .move-divider{height:1px;background:var(--border);margin:2px 0}
-
-/* Image gallery */
-.gallery-section{margin:0 20px 16px}
-.gallery-header{font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
-.image-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
-.gallery-thumb{aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;background:var(--bg)}
-.gallery-thumb img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .15s}
-.gallery-thumb:hover img{transform:scale(1.06)}
-
-/* Sections */
+/* Sections (collapsible) */
 .section{background:var(--surface);border-top:1px solid var(--border)}
 .section summary{padding:14px 20px;cursor:pointer;font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;justify-content:space-between;list-style:none;user-select:none}
 .section summary::-webkit-details-marker{display:none}
@@ -102,7 +54,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .editor-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .editor-toolbar button{padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;cursor:pointer;background:transparent;font-family:inherit;color:var(--text)}
 .editor-toolbar button:hover{border-color:var(--accent);color:var(--accent)}
-#note-editor{min-height:160px;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:.9rem;line-height:1.6;outline:none}
+#note-editor{min-height:140px;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:.9rem;line-height:1.6;outline:none}
 #note-editor:focus{border-color:var(--accent)}
 #note-editor ul,#note-editor ol{padding-left:20px}
 .note-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
@@ -115,7 +67,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .field-label{font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;display:block}
 .field-input{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.88rem;font-family:inherit;color:var(--text)}
 .field-input:focus{outline:none;border-color:var(--accent)}
-textarea.field-input{resize:vertical;min-height:72px}
 .tag-input-wrap{display:flex;flex-wrap:wrap;gap:6px;border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:text;min-height:38px;align-items:center}
 .tag-input-wrap:focus-within{border-color:var(--accent)}
 .tag-chip{display:inline-flex;align-items:center;gap:4px;background:#ede9fe;color:var(--accent);border-radius:12px;padding:2px 8px;font-size:.78rem}
@@ -143,6 +94,81 @@ textarea.field-input{resize:vertical;min-height:72px}
 .trash-actions button{padding:4px 10px;border-radius:6px;border:1px solid var(--border);font-size:.75rem;cursor:pointer;background:transparent;font-family:inherit}
 .restore-btn:hover{border-color:var(--success);color:var(--success)}
 .perm-del-btn:hover{border-color:var(--danger);color:var(--danger)}
+
+/* File browser divider */
+.file-browser-divider{height:8px;background:var(--bg);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+
+/* Actions bar */
+.actions-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.folder-nav{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
+.folder-pill{padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;font-size:.8rem;font-family:inherit;cursor:pointer;color:var(--muted);white-space:nowrap}
+.folder-pill:hover{border-color:var(--accent);color:var(--accent)}
+.folder-pill.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+#sort-select{padding:5px 10px;border:1px solid var(--border);border-radius:7px;font-size:.8rem;font-family:inherit;background:var(--surface);color:var(--text);flex-shrink:0}
+#new-folder-btn{padding:5px 12px;border:1px solid var(--border);border-radius:7px;font-size:.8rem;font-family:inherit;cursor:pointer;background:transparent;color:var(--muted);flex-shrink:0}
+#new-folder-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Drop zone */
+.drop-zone{margin:14px 20px;border:2px dashed var(--border);border-radius:var(--radius);padding:22px 20px;text-align:center;cursor:pointer;transition:all .15s;background:var(--surface)}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:#f5f3ff}
+.drop-zone-icon{font-size:1.4rem;margin-bottom:4px;opacity:.5}
+.drop-zone-text{font-size:.83rem;color:var(--muted)}
+.drop-zone-text b{color:var(--accent);font-weight:500}
+
+/* File toolbar */
+.file-toolbar{display:flex;align-items:center;gap:10px;padding:8px 20px;background:var(--surface);border-bottom:1px solid var(--border)}
+.file-toolbar-left{display:flex;align-items:center;gap:8px;flex:1}
+.sel-btn{padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.78rem;cursor:pointer;background:transparent;font-family:inherit;color:var(--muted)}
+.sel-btn:hover{border-color:var(--accent);color:var(--accent)}
+#sel-count{font-size:.78rem;color:var(--accent);font-weight:500}
+.file-total-size{font-size:.75rem;color:var(--muted);margin-left:auto}
+
+/* File list */
+.file-list-wrap{margin:0 20px 14px;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.file-list-empty{padding:24px;text-align:center;color:var(--muted);font-size:.85rem}
+.file-row{display:flex;align-items:center;padding:9px 14px;gap:10px;border-bottom:1px solid var(--border);transition:background .1s;cursor:default}
+.file-row:last-child{border-bottom:none}
+.file-row:hover{background:#fafaf9}
+.file-row.selected{background:#f5f3ff}
+
+/* Checkbox */
+.file-cb{width:20px;height:20px;border:2px solid var(--border);border-radius:5px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;font-size:.7rem;color:transparent}
+.file-cb:hover{border-color:var(--accent)}
+.file-row.selected .file-cb{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.file-row-thumb{width:34px;height:34px;border-radius:5px;object-fit:cover;flex-shrink:0;cursor:pointer}
+.file-row-icon{font-size:1.2rem;flex-shrink:0;width:34px;text-align:center;line-height:34px}
+.file-row-info{flex:1;min-width:0}
+.file-row-name{font-size:.83rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-row-meta{font-size:.72rem;color:var(--muted);margin-top:2px}
+.file-row-folder-badge{display:inline-block;background:var(--bg);border-radius:8px;padding:1px 7px;font-size:.68rem;color:var(--muted);margin-right:4px}
+.file-row-actions{display:flex;gap:4px;flex-shrink:0}
+.file-row-actions button{padding:3px 8px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;cursor:pointer;background:transparent;font-family:inherit;color:var(--muted)}
+.file-row-actions button:hover{border-color:var(--accent);color:var(--accent)}
+.file-row-actions .del-btn:hover{border-color:var(--danger);color:var(--danger)}
+
+/* Move dropdown */
+#move-menu{display:none;position:fixed;z-index:400;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.14);min-width:130px;overflow:hidden}
+#move-menu button{display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:transparent;font-size:.82rem;font-family:inherit;cursor:pointer;color:var(--text)}
+#move-menu button:hover{background:var(--bg);color:var(--accent)}
+
+/* Image gallery */
+.gallery-section{margin:0 20px 14px}
+.gallery-header{font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.image-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
+.gallery-thumb{aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;background:var(--bg)}
+.gallery-thumb img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .15s}
+.gallery-thumb:hover img{transform:scale(1.06)}
+
+/* Bulk action bar (fixed bottom) */
+.bulk-bar{position:fixed;bottom:0;left:0;right:0;background:#1c1917;color:#fff;padding:0 20px;height:52px;display:flex;align-items:center;gap:0;z-index:500;transform:translateY(100%);transition:transform .2s ease;box-shadow:0 -2px 12px rgba(0,0,0,.2)}
+.bulk-bar.visible{transform:translateY(0)}
+.bulk-count{font-size:.88rem;font-weight:600;padding-right:16px;border-right:1px solid rgba(255,255,255,.2);margin-right:16px;white-space:nowrap}
+.bulk-sep{color:rgba(255,255,255,.3);margin:0 12px}
+.bulk-bar button{background:none;border:none;color:#fff;cursor:pointer;font-size:.88rem;font-family:inherit;padding:4px 0;opacity:.8}
+.bulk-bar button:hover{opacity:1}
+.bulk-bar .bulk-cancel{margin-left:auto;opacity:.6}
+.bulk-bar .bulk-cancel:hover{opacity:1}
 
 /* Lightbox */
 #lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:1500;display:flex;align-items:center;justify-content:center}
@@ -196,36 +222,9 @@ textarea.field-input{resize:vertical;min-height:72px}
   <textarea id="desc-input" placeholder="Add a description…" rows="1" oninput="autoGrow(this)"></textarea>
 </div>
 
-<div class="actions-bar">
-  <div class="folder-nav" id="folder-nav">
-    <button class="folder-pill active" data-folder="" onclick="setFolder(this,'')">All Files</button>
-  </div>
-  <select id="sort-select" onchange="renderFileList()">
-    <option value="name">Sort: Name</option>
-    <option value="date">Sort: Date</option>
-    <option value="size">Sort: Size</option>
-  </select>
-  <button id="new-folder-btn" onclick="addFolder()">+ Folder</button>
-</div>
-
-<div class="drop-zone" id="drop-zone">
-  <div class="drop-zone-icon">↑</div>
-  <div class="drop-zone-text">Drop files here · or <b>click to browse</b></div>
-  <input type="file" id="file-input" multiple hidden>
-</div>
-
-<div class="file-list-wrap" id="file-list-wrap">
-  <div class="file-list-empty" id="file-list-empty" style="display:none">No files here yet.</div>
-  <div id="file-list"></div>
-</div>
-
-<div class="gallery-section" id="gallery-section" style="display:none">
-  <div class="gallery-header" id="gallery-header">Images</div>
-  <div class="image-gallery" id="image-gallery"></div>
-</div>
-
+<!-- Notes, Memo Info, Trash ABOVE the file browser -->
 <details class="section" id="notes-section" open>
-  <summary>Notes <span class="s-right" id="note-status-inline"></span></summary>
+  <summary>Notes <span class="s-right" id="note-hint">Click to expand…</span></summary>
   <div class="section-body">
     <div class="editor-toolbar">
       <button onclick="exec('bold')"><b>B</b></button>
@@ -276,6 +275,58 @@ textarea.field-input{resize:vertical;min-height:72px}
   </div>
 </details>
 
+<!-- File browser -->
+<div class="file-browser-divider"></div>
+
+<div class="actions-bar">
+  <div class="folder-nav" id="folder-nav">
+    <button class="folder-pill active" data-folder="" onclick="setFolder(this,'')">All Files</button>
+  </div>
+  <select id="sort-select" onchange="renderFileList()">
+    <option value="name">Sort: Name</option>
+    <option value="date">Sort: Date</option>
+    <option value="size">Sort: Size</option>
+  </select>
+  <button id="new-folder-btn" onclick="addFolder()">+ Folder</button>
+</div>
+
+<div class="drop-zone" id="drop-zone">
+  <div class="drop-zone-icon">↑</div>
+  <div class="drop-zone-text" id="drop-zone-text">Drop files here · or <b>click to browse</b></div>
+  <input type="file" id="file-input" multiple hidden>
+</div>
+
+<div class="file-toolbar">
+  <div class="file-toolbar-left">
+    <button class="sel-btn" onclick="selectAll()">Select all</button>
+    <button class="sel-btn" onclick="deselectAll()">Deselect all</button>
+    <span id="sel-count"></span>
+  </div>
+  <span class="file-total-size" id="file-total-size"></span>
+</div>
+
+<div class="file-list-wrap" id="file-list-wrap">
+  <div class="file-list-empty" id="file-list-empty" style="display:none">No files here yet.</div>
+  <div id="file-list"></div>
+</div>
+
+<div class="gallery-section" id="gallery-section" style="display:none">
+  <div class="gallery-header" id="gallery-header">Images</div>
+  <div class="image-gallery" id="image-gallery"></div>
+</div>
+
+<!-- Bulk action bar -->
+<div class="bulk-bar" id="bulk-bar">
+  <span class="bulk-count" id="bulk-count">0 selected</span>
+  <span class="bulk-sep">|</span>
+  <button onclick="bulkTag()">Tag</button>
+  <span class="bulk-sep">|</span>
+  <button onclick="showBulkMoveMenu()">Move</button>
+  <span class="bulk-sep">|</span>
+  <button onclick="bulkTrash()" style="color:#fca5a5">Delete</button>
+  <button class="bulk-cancel" onclick="deselectAll()">Cancel</button>
+</div>
+
 <!-- Lightbox -->
 <div id="lightbox" class="hidden">
   <button id="lb-close" onclick="closeLightbox()">✕</button>
@@ -301,8 +352,8 @@ textarea.field-input{resize:vertical;min-height:72px}
   </div>
 </div>
 
-<!-- Move menu (floating) -->
-<div id="move-menu" style="display:none;position:fixed;z-index:300;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:130px;overflow:hidden"></div>
+<!-- Move dropdown (shared) -->
+<div id="move-menu"></div>
 
 <script>
 const WORKER = 'https://memo-worker.ausz.workers.dev';
@@ -310,43 +361,45 @@ let token = localStorage.getItem('memo_token') || '';
 const params = new URLSearchParams(location.search);
 const memoId = params.get('id');
 
-let memo = null, meta = { files: {}, folders: [], trash: [] }, allFiles = [];
+let memo = null, meta = { files:{}, folders:[], trash:[] }, allFiles = [];
 let currentFolder = '', lbFiles = [], lbIdx = 0, modalFile = null;
 let currentTags = [];
+const selectedFiles = new Set();
+let moveMenuTarget = null; // 'single:key' or 'bulk'
 
 const IMG_EXTS = new Set(['jpg','jpeg','png','gif','webp','heic','avif','bmp','svg','tiff']);
 const isImg = n => IMG_EXTS.has(ext(n));
 const isPdf = n => ext(n) === 'pdf';
 const isPreviewable = n => isImg(n) || isPdf(n);
-const ext = n => (n.split('.').pop() || '').toLowerCase();
+const ext = n => (n.split('.').pop()||'').toLowerCase();
 const basename = n => n.split('/').pop();
 
-function api(path, opts = {}) {
+function api(path, opts={}) {
   const sep = path.includes('?') ? '&' : '?';
   return fetch(WORKER + path + sep + 't=' + encodeURIComponent(token), opts).then(r => {
     if (r.status === 401) { logout(); throw new Error('unauthorized'); }
     return r;
   });
 }
-function logout() { localStorage.removeItem('memo_token'); token = ''; document.getElementById('auth-overlay').classList.remove('hidden'); }
+function logout() { localStorage.removeItem('memo_token'); token=''; document.getElementById('auth-overlay').classList.remove('hidden'); }
 
 async function doAuth() {
   token = document.getElementById('auth-input').value.trim();
   document.getElementById('auth-error').textContent = '';
-  const r = await fetch(WORKER + '?check=1&t=' + encodeURIComponent(token)).catch(() => null);
-  if (r && r.ok) { localStorage.setItem('memo_token', token); document.getElementById('auth-overlay').classList.add('hidden'); init(); }
+  const r = await fetch(WORKER + '?check=1&t=' + encodeURIComponent(token)).catch(()=>null);
+  if (r && r.ok) { localStorage.setItem('memo_token',token); document.getElementById('auth-overlay').classList.add('hidden'); init(); }
   else document.getElementById('auth-error').textContent = 'Wrong passphrase.';
 }
-document.getElementById('auth-input').addEventListener('keydown', e => { if (e.key === 'Enter') doAuth(); });
+document.getElementById('auth-input').addEventListener('keydown', e => { if(e.key==='Enter') doAuth(); });
 
 function fileUrl(key) {
-  return WORKER + '/memos/' + memoId + '/files/' + key.split('/').map(encodeURIComponent).join('/') + '?t=' + encodeURIComponent(token);
+  return WORKER+'/memos/'+memoId+'/files/'+key.split('/').map(encodeURIComponent).join('/')+'?t='+encodeURIComponent(token);
 }
 
 async function init() {
-  if (!memoId) { location.href = '../'; return; }
-  const r = await fetch(WORKER + '?check=1&t=' + encodeURIComponent(token)).catch(() => null);
-  if (!r || !r.ok) { document.getElementById('auth-overlay').classList.remove('hidden'); return; }
+  if (!memoId) { location.href='../'; return; }
+  const r = await fetch(WORKER+'?check=1&t='+encodeURIComponent(token)).catch(()=>null);
+  if (!r||!r.ok) { document.getElementById('auth-overlay').classList.remove('hidden'); return; }
   document.getElementById('auth-overlay').classList.add('hidden');
   await Promise.all([loadMemo(), loadMeta()]);
   await loadFiles();
@@ -354,57 +407,51 @@ async function init() {
 }
 
 async function loadMemo() {
-  memo = await (await api('/memos/' + memoId)).json();
+  memo = await (await api('/memos/'+memoId)).json();
   document.title = memo.memo_id;
   document.getElementById('memo-id-badge').textContent = memo.memo_id;
-  document.getElementById('title-input').value = memo.title || '';
-  document.getElementById('desc-input').value = memo.description || '';
+  document.getElementById('title-input').value = memo.title||'';
+  document.getElementById('desc-input').value = memo.description||'';
   autoGrow(document.getElementById('desc-input'));
   document.getElementById('pin-btn').classList.toggle('active', !!memo.pinned);
-  document.getElementById('uid-input').value = memo.uid || '';
-  document.getElementById('uid-hint').textContent = memo.uid || '';
-  renderTags(safeJson(memo.tags, []));
-  renderLinks(safeJson(memo.links, []));
+  document.getElementById('uid-input').value = memo.uid||'';
+  document.getElementById('uid-hint').textContent = memo.uid||'';
+  renderTags(safeJson(memo.tags,[]));
+  renderLinks(safeJson(memo.links,[]));
 }
 
 async function loadFiles() {
-  allFiles = await (await api('/memos/' + memoId + '/files')).json();
+  allFiles = await (await api('/memos/'+memoId+'/files')).json();
   renderFileList();
   renderGallery();
   renderCoverSelect();
 }
 
 async function loadMeta() {
-  meta = await (await api('/memos/' + memoId + '/meta')).json();
-  meta.files = meta.files || {};
-  meta.folders = meta.folders || [];
-  meta.trash = meta.trash || [];
+  meta = await (await api('/memos/'+memoId+'/meta')).json();
+  meta.files=meta.files||{}; meta.folders=meta.folders||[]; meta.trash=meta.trash||[];
   renderFolderNav();
   renderTrash();
 }
 
 async function loadNote() {
-  const r = await api('/memos/' + memoId + '/note');
+  const r = await api('/memos/'+memoId+'/note');
   const html = await r.text();
   document.getElementById('note-editor').innerHTML = html;
-  const status = html ? 'Saved' : 'No note yet';
-  document.getElementById('note-status').textContent = status;
-  document.getElementById('note-status-inline').textContent = html ? '' : 'Click to expand…';
+  document.getElementById('note-status').textContent = html ? 'Saved' : 'No note yet';
+  document.getElementById('note-hint').textContent = html ? '' : 'Click to expand…';
 }
 
-// ── File list rendering ───────────────────────────────────────────────────────
+// ── File list ─────────────────────────────────────────────────────────────────
 
 function getVisibleFiles() {
   let files = allFiles.filter(f => !f.key.startsWith('_'));
-  if (currentFolder === '') {
-    files = files.filter(f => !f.key.includes('/'));
-  } else {
-    files = files.filter(f => f.key.startsWith(currentFolder + '/') && !f.key.slice(currentFolder.length + 1).includes('/'));
-  }
+  if (currentFolder==='') files = files.filter(f => !f.key.includes('/'));
+  else files = files.filter(f => f.key.startsWith(currentFolder+'/') && !f.key.slice(currentFolder.length+1).includes('/'));
   const sort = document.getElementById('sort-select').value;
-  files.sort((a, b) => {
-    if (sort === 'date') return new Date(b.uploaded) - new Date(a.uploaded);
-    if (sort === 'size') return b.size - a.size;
+  files.sort((a,b) => {
+    if (sort==='date') return new Date(b.uploaded)-new Date(a.uploaded);
+    if (sort==='size') return b.size-a.size;
     return a.key.localeCompare(b.key);
   });
   return files;
@@ -417,37 +464,45 @@ function renderFileList() {
   list.innerHTML = '';
   empty.style.display = files.length ? 'none' : 'block';
 
+  const totalSize = allFiles.reduce((s,f)=>s+f.size,0);
+  document.getElementById('file-total-size').textContent = allFiles.length ? fmtSize(totalSize)+' total' : '';
+
+  lbFiles = allFiles.filter(f => isImg(f.key) && !f.key.startsWith('_'));
+
   files.forEach(f => {
     const name = basename(f.key);
-    const fm = meta.files[f.key] || {};
-    const folderPart = f.key.includes('/') ? f.key.split('/').slice(0, -1).join('/') : '';
+    const fm = meta.files[f.key]||{};
+    const folderPart = f.key.includes('/') ? f.key.split('/').slice(0,-1).join('/') : '';
+    const isSel = selectedFiles.has(f.key);
     const row = document.createElement('div');
-    row.className = 'file-row';
+    row.className = 'file-row' + (isSel ? ' selected' : '');
+    row.dataset.key = f.key;
 
-    let thumbOrIcon;
-    if (isImg(f.key)) {
-      thumbOrIcon = `<img class="file-row-thumb" src="${fileUrl(f.key)}" loading="lazy" alt="" onclick="openLightbox('${esc(f.key)}')">`;
-    } else {
-      thumbOrIcon = `<div class="file-row-icon">${fileIcon(f.key)}</div>`;
-    }
-
-    const folderLabel = folderPart ? `<span class="file-row-folder">${esc(folderPart)}</span>` : '';
+    const thumbHtml = isImg(f.key)
+      ? `<img class="file-row-thumb" src="${fileUrl(f.key)}" loading="lazy" alt="" onclick="openLightbox('${esc(f.key)}')">`
+      : `<div class="file-row-icon">${fileIcon(f.key)}</div>`;
 
     row.innerHTML = `
-      ${thumbOrIcon}
-      <div class="file-row-name" title="${esc(f.key)}">${esc(name)}${fm.caption ? `<div style="font-size:.7rem;color:var(--muted);font-weight:400">${esc(fm.caption)}</div>` : ''}</div>
-      ${folderLabel}
-      <div class="file-row-size">${fmtSize(f.size)}</div>
-      <div class="file-row-actions">
-        <div class="move-wrap">
-          <button onclick="showMoveMenu(event,'${esc(f.key)}')">Move ▾</button>
+      <div class="file-cb" onclick="toggleSelect('${esc(f.key)}')" title="Select">✓</div>
+      ${thumbHtml}
+      <div class="file-row-info">
+        <div class="file-row-name" title="${esc(f.key)}">${esc(name)}</div>
+        <div class="file-row-meta">
+          ${folderPart ? `<span class="file-row-folder-badge">${esc(folderPart)}</span>` : ''}
+          ${fmtSize(f.size)} · ${fmtDate(f.uploaded)}
+          ${fm.caption ? ` · <em>${esc(fm.caption)}</em>` : ''}
         </div>
+      </div>
+      <div class="file-row-actions">
+        <button onclick="showMoveMenu(event,'${esc(f.key)}')">Move ▾</button>
         <button onclick="openFileInfo('${esc(f.key)}')">ⓘ</button>
-        ${isPreviewable(f.key) ? `<button onclick="${isPdf(f.key) ? `openLightbox('${esc(f.key)}')` : `openLightbox('${esc(f.key)}')`}">View</button>` : `<button onclick="downloadFile('${esc(f.key)}')">↓</button>`}
+        ${isPreviewable(f.key) ? `<button onclick="openLightbox('${esc(f.key)}')">View</button>` : `<button onclick="downloadFile('${esc(f.key)}')">↓</button>`}
         <button class="del-btn" onclick="trashFile('${esc(f.key)}')">🗑</button>
       </div>`;
     list.appendChild(row);
   });
+
+  updateSelectionUI();
 }
 
 function renderGallery() {
@@ -470,42 +525,41 @@ function renderGallery() {
 function renderFolderNav() {
   const nav = document.getElementById('folder-nav');
   nav.innerHTML = '<button class="folder-pill active" data-folder="" onclick="setFolder(this,\'\')">All Files</button>';
-  (meta.folders || []).forEach(folder => {
+  (meta.folders||[]).forEach(folder => {
     const b = document.createElement('button');
-    b.className = 'folder-pill'; b.dataset.folder = folder; b.textContent = folder;
-    b.onclick = () => setFolder(b, folder);
+    b.className='folder-pill'; b.dataset.folder=folder; b.textContent=folder;
+    b.onclick=()=>setFolder(b,folder);
     nav.appendChild(b);
   });
 }
 
 function setFolder(el, folder) {
-  currentFolder = folder;
-  document.querySelectorAll('.folder-pill').forEach(b => b.classList.toggle('active', b.dataset.folder === folder));
+  currentFolder=folder;
+  document.querySelectorAll('.folder-pill').forEach(b=>b.classList.toggle('active',b.dataset.folder===folder));
+  selectedFiles.clear();
   renderFileList();
 }
 
 function renderCoverSelect() {
   const sel = document.getElementById('cover-select');
-  const images = allFiles.filter(f => isImg(f.key) && !f.key.startsWith('_'));
-  sel.innerHTML = '<option value="">— None —</option>';
-  images.forEach(f => {
-    const o = document.createElement('option');
-    o.value = f.key; o.textContent = f.key;
-    if (memo && memo.cover_file === f.key) o.selected = true;
+  const images = allFiles.filter(f=>isImg(f.key)&&!f.key.startsWith('_'));
+  sel.innerHTML='<option value="">— None —</option>';
+  images.forEach(f=>{
+    const o=document.createElement('option');
+    o.value=f.key; o.textContent=f.key;
+    if(memo&&memo.cover_file===f.key) o.selected=true;
     sel.appendChild(o);
   });
 }
 
 function renderTrash() {
-  const items = meta.trash || [];
-  document.getElementById('trash-count').textContent = items.length ? `${items.length} item${items.length > 1 ? 's' : ''}` : '';
+  const items = meta.trash||[];
+  document.getElementById('trash-count').textContent = items.length ? `${items.length} item${items.length>1?'s':''}` : '';
   const list = document.getElementById('trash-list');
-  list.innerHTML = '';
-  items.forEach(item => {
-    const div = document.createElement('div');
-    div.className = 'trash-item';
-    div.innerHTML = `
-      <div class="trash-item-name">${esc(item.origKey)}</div>
+  list.innerHTML='';
+  items.forEach(item=>{
+    const div=document.createElement('div'); div.className='trash-item';
+    div.innerHTML=`<div class="trash-item-name">${esc(item.origKey)}</div>
       <div class="trash-item-date">${fmtDate(item.deletedAt)}</div>
       <div class="trash-actions">
         <button class="restore-btn" onclick="restoreFile('${esc(item.trashKey)}','${esc(item.origKey)}')">Restore</button>
@@ -515,77 +569,158 @@ function renderTrash() {
   });
 }
 
-// ── Upload (drop zone + input) ────────────────────────────────────────────────
+// ── Selection ─────────────────────────────────────────────────────────────────
 
-const dropZone = document.getElementById('drop-zone');
-const fileInput = document.getElementById('file-input');
+function toggleSelect(key) {
+  if (selectedFiles.has(key)) selectedFiles.delete(key);
+  else selectedFiles.add(key);
+  updateSelectionUI();
+}
 
-dropZone.addEventListener('click', () => fileInput.click());
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', async e => {
-  e.preventDefault(); dropZone.classList.remove('drag-over');
-  await uploadFiles(Array.from(e.dataTransfer.files));
-});
-fileInput.addEventListener('change', async () => {
-  await uploadFiles(Array.from(fileInput.files));
-  fileInput.value = '';
-});
+function selectAll() {
+  getVisibleFiles().forEach(f=>selectedFiles.add(f.key));
+  updateSelectionUI();
+}
 
-async function uploadFiles(files) {
-  if (!files.length) return;
-  dropZone.querySelector('.drop-zone-text').textContent = `Uploading ${files.length} file${files.length > 1 ? 's' : ''}…`;
-  for (const file of files) {
-    const fd = new FormData();
-    fd.append('file', file);
-    if (currentFolder) fd.append('folder', currentFolder);
-    try { await api('/memos/' + memoId + '/files', { method: 'POST', body: fd }); } catch {}
+function deselectAll() {
+  selectedFiles.clear();
+  updateSelectionUI();
+}
+
+function updateSelectionUI() {
+  const count = selectedFiles.size;
+  document.querySelectorAll('.file-row').forEach(row=>{
+    const key = row.dataset.key;
+    const sel = selectedFiles.has(key);
+    row.classList.toggle('selected', sel);
+  });
+  document.getElementById('sel-count').textContent = count ? `${count} selected` : '';
+  document.getElementById('bulk-count').textContent = `${count} selected`;
+  document.getElementById('bulk-bar').classList.toggle('visible', count>0);
+}
+
+// ── Bulk operations ───────────────────────────────────────────────────────────
+
+async function bulkTrash() {
+  const keys = [...selectedFiles];
+  if (!keys.length) return;
+  if (!confirm(`Move ${keys.length} file${keys.length>1?'s':''} to trash?`)) return;
+  for (const key of keys) {
+    try {
+      const r = await api('/memos/'+memoId+'/trash',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key})});
+      const {trashKey} = await r.json();
+      meta.trash.push({trashKey,origKey:key,name:basename(key),deletedAt:new Date().toISOString()});
+      delete meta.files[key];
+    } catch {}
   }
-  dropZone.querySelector('.drop-zone-text').innerHTML = 'Drop files here · or <b>click to browse</b>';
+  selectedFiles.clear();
+  await saveMeta();
+  await loadFiles();
+  renderTrash();
+}
+
+function showBulkMoveMenu() {
+  if (!selectedFiles.size) return;
+  moveMenuTarget = 'bulk';
+  const bar = document.getElementById('bulk-bar');
+  const rect = bar.getBoundingClientRect();
+  buildMoveMenu(null, rect.left+10, rect.top-8, [...selectedFiles][0]);
+}
+
+async function bulkMoveToFolder(folder) {
+  document.getElementById('move-menu').style.display='none';
+  const keys = [...selectedFiles];
+  for (const key of keys) {
+    try {
+      const r = await api('/memos/'+memoId+'/move',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({srcKey:key,dstFolder:folder})});
+      const {key:newKey} = await r.json();
+      if (meta.files[key]) { meta.files[newKey]=meta.files[key]; delete meta.files[key]; }
+    } catch {}
+  }
+  selectedFiles.clear();
+  await saveMeta();
   await loadFiles();
 }
 
-// ── Move file ─────────────────────────────────────────────────────────────────
+async function bulkTag() {
+  const tag = prompt('Tag to add to selected files:');
+  if (!tag||!tag.trim()) return;
+  const t = tag.trim();
+  for (const key of selectedFiles) {
+    const fm = meta.files[key]||{};
+    const tags = fm.tags||[];
+    if (!tags.includes(t)) tags.push(t);
+    meta.files[key]={...fm,tags};
+  }
+  selectedFiles.clear();
+  await saveMeta();
+  renderFileList();
+}
 
-let activeMoveMenu = null;
+// ── Single file move ──────────────────────────────────────────────────────────
 
 function showMoveMenu(e, key) {
   e.stopPropagation();
-  const menu = document.getElementById('move-menu');
-  const btn = e.currentTarget;
-  const rect = btn.getBoundingClientRect();
-  menu.style.display = 'block';
-  menu.style.top = (rect.bottom + window.scrollY + 4) + 'px';
-  menu.style.left = Math.min(rect.left, window.innerWidth - 140) + 'px';
-  activeMoveMenu = key;
-
-  const folders = meta.folders || [];
-  const currentFileFolder = key.includes('/') ? key.split('/').slice(0, -1).join('/') : '';
-  const opts = [];
-  if (currentFileFolder !== '') opts.push({ label: '📁 Root', folder: '' });
-  folders.forEach(f => { if (f !== currentFileFolder) opts.push({ label: '📁 ' + f, folder: f }); });
-
-  menu.innerHTML = opts.length
-    ? opts.map(o => `<button onclick="moveFile('${esc(activeMoveMenu)}','${esc(o.folder)}')">${esc(o.label)}</button>`).join('')
-    : '<button disabled style="color:var(--muted);cursor:default">No other folders</button>';
+  moveMenuTarget = 'single:' + key;
+  const rect = e.currentTarget.getBoundingClientRect();
+  buildMoveMenu(key, rect.left, rect.bottom+4, key);
 }
 
-document.addEventListener('click', () => { document.getElementById('move-menu').style.display = 'none'; });
+function buildMoveMenu(singleKey, x, y, refKey) {
+  const menu = document.getElementById('move-menu');
+  const folders = meta.folders||[];
+  const currentFileFolder = refKey&&refKey.includes('/') ? refKey.split('/').slice(0,-1).join('/') : '';
+  const opts = [];
+  if (currentFileFolder!=='') opts.push({label:'📁 Root',folder:''});
+  folders.forEach(f=>{ if(f!==currentFileFolder) opts.push({label:'📁 '+f,folder:f}); });
+
+  menu.innerHTML = opts.length
+    ? opts.map(o=>`<button onclick="${moveMenuTarget==='bulk' ? `bulkMoveToFolder('${esc(o.folder)}')` : `moveFile('${esc(singleKey||refKey)}','${esc(o.folder)}')`}">${esc(o.label)}</button>`).join('')
+    : '<button disabled style="color:var(--muted);cursor:default;padding:8px 14px">No folders to move to</button>';
+
+  menu.style.display='block';
+  menu.style.left = Math.min(x, window.innerWidth-150)+'px';
+  menu.style.top = Math.min(y, window.innerHeight-120)+'px';
+}
+
+document.addEventListener('click', ()=>{ document.getElementById('move-menu').style.display='none'; });
 
 async function moveFile(srcKey, dstFolder) {
-  document.getElementById('move-menu').style.display = 'none';
+  document.getElementById('move-menu').style.display='none';
   try {
-    const r = await api('/memos/' + memoId + '/move', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ srcKey, dstFolder }),
-    });
-    const { key: newKey } = await r.json();
-    // Update meta.files if caption/tags exist
-    if (meta.files[srcKey]) { meta.files[newKey] = meta.files[srcKey]; delete meta.files[srcKey]; await saveMeta(); }
-    // Update cover_file if needed
-    if (memo && memo.cover_file === srcKey) { memo.cover_file = newKey; await saveInfo(); }
+    const r = await api('/memos/'+memoId+'/move',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({srcKey,dstFolder})});
+    const {key:newKey} = await r.json();
+    if (meta.files[srcKey]) { meta.files[newKey]=meta.files[srcKey]; delete meta.files[srcKey]; }
+    if (memo&&memo.cover_file===srcKey) { memo.cover_file=newKey; await saveInfo(); }
+    await saveMeta();
     await loadFiles();
   } catch {}
+}
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+dropZone.addEventListener('click', ()=>fileInput.click());
+dropZone.addEventListener('dragover', e=>{e.preventDefault();dropZone.classList.add('drag-over');});
+dropZone.addEventListener('dragleave', ()=>dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', async e=>{
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  await uploadFiles(Array.from(e.dataTransfer.files));
+});
+fileInput.addEventListener('change', async ()=>{ await uploadFiles(Array.from(fileInput.files)); fileInput.value=''; });
+
+async function uploadFiles(files) {
+  if (!files.length) return;
+  const txt = document.getElementById('drop-zone-text');
+  txt.innerHTML = `Uploading ${files.length} file${files.length>1?'s':''}…`;
+  for (const file of files) {
+    const fd = new FormData(); fd.append('file',file);
+    if (currentFolder) fd.append('folder',currentFolder);
+    try { await api('/memos/'+memoId+'/files',{method:'POST',body:fd}); } catch {}
+  }
+  txt.innerHTML = 'Drop files here · or <b>click to browse</b>';
+  await loadFiles();
 }
 
 // ── Trash / restore ───────────────────────────────────────────────────────────
@@ -593,234 +728,214 @@ async function moveFile(srcKey, dstFolder) {
 async function trashFile(key) {
   if (!confirm(`Move "${basename(key)}" to trash?`)) return;
   try {
-    const r = await api('/memos/' + memoId + '/trash', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key}) });
-    const { trashKey } = await r.json();
-    meta.trash = meta.trash || [];
-    meta.trash.push({ trashKey, origKey: key, name: basename(key), deletedAt: new Date().toISOString() });
+    const r = await api('/memos/'+memoId+'/trash',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key})});
+    const {trashKey} = await r.json();
+    meta.trash.push({trashKey,origKey:key,name:basename(key),deletedAt:new Date().toISOString()});
     delete meta.files[key];
-    await saveMeta();
-    await loadFiles();
-    renderTrash();
+    await saveMeta(); await loadFiles(); renderTrash();
   } catch {}
 }
 
 async function restoreFile(trashKey, origKey) {
   try {
-    await api('/memos/' + memoId + '/restore', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({trashKey, origKey}) });
-    meta.trash = meta.trash.filter(i => i.trashKey !== trashKey);
-    await saveMeta();
-    await loadFiles();
-    renderTrash();
+    await api('/memos/'+memoId+'/restore',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({trashKey,origKey})});
+    meta.trash=meta.trash.filter(i=>i.trashKey!==trashKey);
+    await saveMeta(); await loadFiles(); renderTrash();
   } catch {}
 }
 
 async function permDelete(trashKey, origKey) {
-  if (!confirm(`Permanently delete "${basename(origKey)}"? This cannot be undone.`)) return;
+  if (!confirm(`Permanently delete "${basename(origKey)}"?`)) return;
   try {
-    await api('/memos/' + memoId + '/files/' + trashKey.split('/').map(encodeURIComponent).join('/'), { method:'DELETE' });
-    meta.trash = meta.trash.filter(i => i.trashKey !== trashKey);
-    await saveMeta();
-    renderTrash();
+    await api('/memos/'+memoId+'/files/'+trashKey.split('/').map(encodeURIComponent).join('/'),{method:'DELETE'});
+    meta.trash=meta.trash.filter(i=>i.trashKey!==trashKey);
+    await saveMeta(); renderTrash();
   } catch {}
 }
 
 // ── Lightbox ──────────────────────────────────────────────────────────────────
 
 function openLightbox(key) {
-  lbIdx = lbFiles.findIndex(f => f.key === key);
-  if (lbIdx === -1) { lbFiles = allFiles.filter(f => isPreviewable(f.key)); lbIdx = lbFiles.findIndex(f => f.key === key); }
-  if (lbIdx === -1) lbIdx = 0;
+  const allPreviewable = allFiles.filter(f=>isImg(f.key)&&!f.key.startsWith('_'));
+  lbFiles = allPreviewable.length ? allPreviewable : allFiles.filter(f=>isPreviewable(f.key));
+  lbIdx = lbFiles.findIndex(f=>f.key===key);
+  if (lbIdx===-1) { lbFiles=[{key}]; lbIdx=0; }
   showLightbox();
 }
 
 function showLightbox() {
-  const f = lbFiles[lbIdx]; if (!f) return;
+  const f=lbFiles[lbIdx]; if(!f) return;
   document.getElementById('lightbox').classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
-  const content = document.getElementById('lb-content');
-  content.innerHTML = isPdf(f.key) ? `<iframe src="${fileUrl(f.key)}"></iframe>` : `<img src="${fileUrl(f.key)}" alt="${esc(basename(f.key))}">`;
-  document.getElementById('lb-caption').textContent = basename(f.key);
-  document.getElementById('lb-counter').textContent = lbFiles.length > 1 ? `${lbIdx + 1} / ${lbFiles.length}` : '';
-  const multi = lbFiles.length > 1;
-  document.getElementById('lb-prev').style.display = multi ? '' : 'none';
-  document.getElementById('lb-next').style.display = multi ? '' : 'none';
+  document.body.style.overflow='hidden';
+  const content=document.getElementById('lb-content');
+  content.innerHTML=isPdf(f.key)?`<iframe src="${fileUrl(f.key)}"></iframe>`:`<img src="${fileUrl(f.key)}" alt="${esc(basename(f.key))}">`;
+  document.getElementById('lb-caption').textContent=basename(f.key);
+  document.getElementById('lb-counter').textContent=lbFiles.length>1?`${lbIdx+1} / ${lbFiles.length}`:'';
+  const multi=lbFiles.length>1;
+  document.getElementById('lb-prev').style.display=multi?'':'none';
+  document.getElementById('lb-next').style.display=multi?'':'none';
 }
 
-function closeLightbox() { document.getElementById('lightbox').classList.add('hidden'); document.getElementById('lb-content').innerHTML = ''; document.body.style.overflow = ''; }
-function lbNav(dir) { lbIdx = (lbIdx + dir + lbFiles.length) % lbFiles.length; showLightbox(); }
-
-document.getElementById('lightbox').addEventListener('click', e => { if (e.target === document.getElementById('lightbox')) closeLightbox(); });
-document.addEventListener('keydown', e => {
-  if (document.getElementById('lightbox').classList.contains('hidden')) return;
-  if (e.key === 'Escape') closeLightbox();
-  if (e.key === 'ArrowLeft') lbNav(-1);
-  if (e.key === 'ArrowRight') lbNav(1);
+function closeLightbox(){document.getElementById('lightbox').classList.add('hidden');document.getElementById('lb-content').innerHTML='';document.body.style.overflow='';}
+function lbNav(dir){lbIdx=(lbIdx+dir+lbFiles.length)%lbFiles.length;showLightbox();}
+document.getElementById('lightbox').addEventListener('click',e=>{if(e.target===document.getElementById('lightbox'))closeLightbox();});
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('lightbox').classList.contains('hidden'))return;
+  if(e.key==='Escape')closeLightbox();
+  if(e.key==='ArrowLeft')lbNav(-1);
+  if(e.key==='ArrowRight')lbNav(1);
 });
 
-function downloadFile(key) { const a = document.createElement('a'); a.href = fileUrl(key); a.download = basename(key); a.click(); }
+function downloadFile(key){const a=document.createElement('a');a.href=fileUrl(key);a.download=basename(key);a.click();}
 
 // ── File info modal ───────────────────────────────────────────────────────────
 
-function openFileInfo(key) {
-  modalFile = key;
-  const fm = meta.files[key] || {};
-  document.getElementById('modal-caption').value = fm.caption || '';
-  document.getElementById('modal-tags').value = (fm.tags || []).join(', ');
+function openFileInfo(key){
+  modalFile=key;
+  const fm=meta.files[key]||{};
+  document.getElementById('modal-caption').value=fm.caption||'';
+  document.getElementById('modal-tags').value=(fm.tags||[]).join(', ');
   document.getElementById('info-modal').classList.remove('hidden');
 }
-function closeModal() { document.getElementById('info-modal').classList.add('hidden'); modalFile = null; }
-async function saveFileInfo() {
-  if (!modalFile) return;
-  meta.files[modalFile] = {
-    caption: document.getElementById('modal-caption').value.trim(),
-    tags: document.getElementById('modal-tags').value.split(',').map(t => t.trim()).filter(Boolean),
+function closeModal(){document.getElementById('info-modal').classList.add('hidden');modalFile=null;}
+async function saveFileInfo(){
+  if(!modalFile)return;
+  meta.files[modalFile]={
+    caption:document.getElementById('modal-caption').value.trim(),
+    tags:document.getElementById('modal-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
   };
-  await saveMeta();
-  closeModal();
-  renderFileList();
+  await saveMeta(); closeModal(); renderFileList();
 }
 
 // ── Folders ───────────────────────────────────────────────────────────────────
 
-async function addFolder() {
-  const name = prompt('Folder name:');
-  if (!name) return;
-  const safe = name.replace(/[^a-zA-Z0-9_\- ]/g, '').trim();
-  if (!safe || (meta.folders || []).includes(safe)) return;
-  meta.folders.push(safe);
-  await saveMeta();
-  renderFolderNav();
+async function addFolder(){
+  const name=prompt('Folder name:'); if(!name)return;
+  const safe=name.replace(/[^a-zA-Z0-9_\- ]/g,'').trim();
+  if(!safe||(meta.folders||[]).includes(safe))return;
+  meta.folders.push(safe); await saveMeta(); renderFolderNav();
 }
 
 // ── Notes ─────────────────────────────────────────────────────────────────────
 
-function exec(cmd) { document.getElementById('note-editor').focus(); document.execCommand(cmd, false, null); }
-function clearNote() { if (!confirm('Clear the note?')) return; document.getElementById('note-editor').innerHTML = ''; document.getElementById('note-status').textContent = 'Cleared'; }
-async function saveNote() {
-  const html = document.getElementById('note-editor').innerHTML;
-  document.getElementById('note-status').textContent = 'Saving…';
-  try {
-    await api('/memos/' + memoId + '/note', { method:'PUT', headers:{'Content-Type':'text/plain'}, body:html });
-    document.getElementById('note-status').textContent = 'Saved ✓';
-  } catch { document.getElementById('note-status').textContent = 'Error'; }
+function exec(cmd){document.getElementById('note-editor').focus();document.execCommand(cmd,false,null);}
+function clearNote(){if(!confirm('Clear the note?'))return;document.getElementById('note-editor').innerHTML='';document.getElementById('note-status').textContent='Cleared';}
+async function saveNote(){
+  const html=document.getElementById('note-editor').innerHTML;
+  document.getElementById('note-status').textContent='Saving…';
+  try{
+    await api('/memos/'+memoId+'/note',{method:'PUT',headers:{'Content-Type':'text/plain'},body:html});
+    document.getElementById('note-status').textContent='Saved ✓';
+  }catch{document.getElementById('note-status').textContent='Error';}
 }
 
 // ── Info / Pin ────────────────────────────────────────────────────────────────
 
-async function togglePin() {
-  memo.pinned = memo.pinned ? 0 : 1;
-  document.getElementById('pin-btn').classList.toggle('active', !!memo.pinned);
+async function togglePin(){
+  memo.pinned=memo.pinned?0:1;
+  document.getElementById('pin-btn').classList.toggle('active',!!memo.pinned);
   await saveInfo();
 }
 
-async function saveInfo() {
-  const tags = getTagsFromUI();
-  const links = getLinksFromUI();
-  try {
-    await api('/memos/' + memoId, {
-      method:'PUT', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        title: document.getElementById('title-input').value.trim(),
-        description: document.getElementById('desc-input').value.trim(),
-        uid: document.getElementById('uid-input').value.trim(),
-        cover_file: document.getElementById('cover-select').value,
-        tags, links, pinned: memo ? memo.pinned : 0,
-      }),
-    });
-    if (memo) { memo.uid = document.getElementById('uid-input').value.trim(); document.getElementById('uid-hint').textContent = memo.uid; }
-  } catch {}
+async function saveInfo(){
+  try{
+    await api('/memos/'+memoId,{method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        title:document.getElementById('title-input').value.trim(),
+        description:document.getElementById('desc-input').value.trim(),
+        uid:document.getElementById('uid-input').value.trim(),
+        cover_file:document.getElementById('cover-select').value,
+        tags:getTagsFromUI(),links:getLinksFromUI(),pinned:memo?memo.pinned:0,
+      })});
+    if(memo){memo.uid=document.getElementById('uid-input').value.trim();document.getElementById('uid-hint').textContent=memo.uid;}
+  }catch{}
 }
 
-document.getElementById('title-input').addEventListener('change', saveInfo);
-document.getElementById('desc-input').addEventListener('change', saveInfo);
+document.getElementById('title-input').addEventListener('change',saveInfo);
+document.getElementById('desc-input').addEventListener('change',saveInfo);
 
 // ── Tags UI ───────────────────────────────────────────────────────────────────
 
-function renderTags(tags) {
-  currentTags = [...tags];
-  const wrap = document.getElementById('tag-wrap');
-  wrap.querySelectorAll('.tag-chip').forEach(c => c.remove());
-  currentTags.forEach(t => {
-    const chip = document.createElement('span');
-    chip.className = 'tag-chip';
-    chip.innerHTML = `${esc(t)}<button onclick="removeTag('${esc(t)}')" title="Remove">×</button>`;
-    wrap.insertBefore(chip, document.getElementById('tag-text-input'));
+function renderTags(tags){
+  currentTags=[...tags];
+  const wrap=document.getElementById('tag-wrap');
+  wrap.querySelectorAll('.tag-chip').forEach(c=>c.remove());
+  currentTags.forEach(t=>{
+    const chip=document.createElement('span');chip.className='tag-chip';
+    chip.innerHTML=`${esc(t)}<button onclick="removeTag('${esc(t)}')" title="Remove">×</button>`;
+    wrap.insertBefore(chip,document.getElementById('tag-text-input'));
   });
 }
-function removeTag(t) { renderTags(currentTags.filter(x => x !== t)); }
-function getTagsFromUI() { return [...currentTags]; }
-document.getElementById('tag-text-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter' || e.key === ',') {
+function removeTag(t){renderTags(currentTags.filter(x=>x!==t));}
+function getTagsFromUI(){return[...currentTags];}
+document.getElementById('tag-text-input').addEventListener('keydown',e=>{
+  if(e.key==='Enter'||e.key===','){
     e.preventDefault();
-    const val = e.target.value.trim().replace(/,$/, '');
-    if (val && !currentTags.includes(val)) { currentTags.push(val); renderTags(currentTags); }
-    e.target.value = '';
+    const val=e.target.value.trim().replace(/,$/,'');
+    if(val&&!currentTags.includes(val)){currentTags.push(val);renderTags(currentTags);}
+    e.target.value='';
   }
 });
 
 // ── Links UI ──────────────────────────────────────────────────────────────────
 
-function renderLinks(links) {
-  const list = document.getElementById('links-list');
-  list.innerHTML = '';
-  links.forEach((l, i) => {
-    const row = document.createElement('div');
-    row.className = 'link-row';
-    row.innerHTML = `<input type="text" placeholder="Label" value="${esc(l.label)}" data-idx="${i}" data-type="label">
+function renderLinks(links){
+  const list=document.getElementById('links-list'); list.innerHTML='';
+  links.forEach((l,i)=>{
+    const row=document.createElement('div');row.className='link-row';
+    row.innerHTML=`<input type="text" placeholder="Label" value="${esc(l.label)}" data-idx="${i}" data-type="label">
       <input type="url" placeholder="URL" value="${esc(l.url)}" data-idx="${i}" data-type="url">
       <button onclick="removeLink(${i})">✕</button>`;
     list.appendChild(row);
   });
 }
-function addLink() { renderLinks([...getLinksFromUI(), { label:'', url:'' }]); }
-function removeLink(i) { const l = getLinksFromUI(); l.splice(i,1); renderLinks(l); }
-function getLinksFromUI() {
-  return Array.from(document.querySelectorAll('.link-row')).map(row => ({
-    label: (row.querySelector('[data-type="label"]') || {}).value || '',
-    url: (row.querySelector('[data-type="url"]') || {}).value || '',
-  })).filter(l => l.url);
+function addLink(){renderLinks([...getLinksFromUI(),{label:'',url:''}]);}
+function removeLink(i){const l=getLinksFromUI();l.splice(i,1);renderLinks(l);}
+function getLinksFromUI(){
+  return Array.from(document.querySelectorAll('.link-row')).map(row=>({
+    label:(row.querySelector('[data-type="label"]')||{}).value||'',
+    url:(row.querySelector('[data-type="url"]')||{}).value||'',
+  })).filter(l=>l.url);
 }
 
 // ── Meta ──────────────────────────────────────────────────────────────────────
 
-async function saveMeta() {
-  await api('/memos/' + memoId + '/meta', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(meta) });
+async function saveMeta(){
+  await api('/memos/'+memoId+'/meta',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(meta)});
 }
 
 // ── Print label ───────────────────────────────────────────────────────────────
 
-function printLabel() {
-  const uid = document.getElementById('uid-input').value.trim() || '—';
-  const title = document.getElementById('title-input').value.trim() || 'Untitled';
-  const mid = document.getElementById('memo-id-badge').textContent;
-  const w = window.open('', '_blank', 'width=400,height=300');
+function printLabel(){
+  const uid=document.getElementById('uid-input').value.trim()||'—';
+  const title=document.getElementById('title-input').value.trim()||'Untitled';
+  const mid=document.getElementById('memo-id-badge').textContent;
+  const w=window.open('','_blank','width=400,height=300');
   w.document.write(`<!DOCTYPE html><html><head><title>Label</title>
     <style>body{font-family:monospace;padding:24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
     .mid{font-size:1.2rem;font-weight:bold}.uid{font-size:1rem;color:#444}.title{font-size:.9rem;color:#666}
     @media print{button{display:none}}</style></head><body>
-    <div class="mid">${esc(mid)}</div>
-    <div class="uid">${esc(uid)}</div>
-    <div class="title">${esc(title)}</div>
+    <div class="mid">${esc(mid)}</div><div class="uid">${esc(uid)}</div><div class="title">${esc(title)}</div>
     <button onclick="window.print()">🖨 Print</button></body></html>`);
   w.document.close();
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function autoGrow(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
-function safeJson(s, fb) { try { return typeof s === 'string' ? JSON.parse(s) : (s || fb); } catch { return fb; } }
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmtDate(iso) { return new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }
-function fmtSize(b) { if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
-function fileIcon(name) {
-  const e = ext(name);
-  if(isPdf(name)) return '📄';
-  if(['mp4','mov','avi','mkv','webm'].includes(e)) return '🎬';
-  if(['mp3','wav','aac','flac'].includes(e)) return '🎵';
-  if(['zip','tar','gz','rar'].includes(e)) return '📦';
-  if(['doc','docx'].includes(e)) return '📝';
-  if(['xls','xlsx','csv'].includes(e)) return '📊';
-  return '📄';
+function autoGrow(el){el.style.height='auto';el.style.height=el.scrollHeight+'px';}
+function safeJson(s,fb){try{return typeof s==='string'?JSON.parse(s):(s||fb);}catch{return fb;}}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtDate(iso){return new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});}
+function fmtSize(b){if(b<1024)return b+' B';if(b<1048576)return(b/1024).toFixed(1)+' KB';return(b/1048576).toFixed(1)+' MB';}
+function fileIcon(name){
+  const e=ext(name);
+  if(isPdf(name))return'📄';
+  if(['mp4','mov','avi','mkv','webm'].includes(e))return'🎬';
+  if(['mp3','wav','aac','flac'].includes(e))return'🎵';
+  if(['zip','tar','gz','rar'].includes(e))return'📦';
+  if(['doc','docx'].includes(e))return'📝';
+  if(['xls','xlsx','csv'].includes(e))return'📊';
+  return'📄';
 }
 
 init();
