@@ -36,6 +36,9 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 #new-btn:hover{background:var(--accent-hover)}
 #rebuild-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:.82rem;cursor:pointer;color:var(--muted);flex-shrink:0;line-height:1;font-family:inherit}
 #rebuild-btn:hover{border-color:var(--accent);color:var(--accent)}
+#trash-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.9rem;cursor:pointer;color:var(--muted);flex-shrink:0;line-height:1}
+#trash-btn:hover{border-color:var(--danger);color:var(--danger)}
+#trash-btn.active{border-color:var(--danger);color:var(--danger);background:#fef2f2}
 
 #tag-bar{padding:10px 24px;display:flex;gap:8px;flex-wrap:wrap;background:var(--surface);border-bottom:1px solid var(--border)}
 .tag-pill{padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;font-size:.82rem;font-family:inherit;cursor:pointer;color:var(--muted);transition:all .1s}
@@ -64,6 +67,15 @@ main{padding:24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280
 
 #empty{display:none;grid-column:1/-1;text-align:center;padding:80px 20px;color:var(--muted)}
 #empty h2{font-size:1.1rem;margin-bottom:8px;font-weight:500}
+#trash-bar{display:none;padding:10px 24px;background:#fef2f2;border-bottom:1px solid #fecaca;align-items:center;gap:12px}
+#trash-bar span{font-size:.88rem;color:#991b1b;flex:1}
+#trash-bar button{padding:6px 14px;border-radius:7px;font-size:.82rem;cursor:pointer;font-family:inherit;border:1px solid #fecaca;background:transparent;color:#991b1b}
+#trash-bar .empty-btn{background:#ef4444;color:#fff;border-color:#ef4444;font-weight:500}
+.card-trash-actions{display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.card-trash-actions button{flex:1;padding:6px 0;border-radius:7px;font-size:.8rem;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:transparent;color:var(--muted)}
+.card-trash-actions .restore-btn{border-color:var(--accent);color:var(--accent)}
+.card-trash-actions .restore-btn:hover{background:var(--accent);color:#fff}
+.card-trash-actions .perm-btn:hover{border-color:var(--danger);color:var(--danger)}
 </style>
 </head>
 <body>
@@ -84,8 +96,15 @@ main{padding:24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280
     <input type="search" id="search-input" placeholder="Search memos…" oninput="onSearch(this.value)">
   </div>
   <button id="rebuild-btn" title="Rebuild search index — run this after deploying a worker update, or if search results seem stale. Takes a few seconds." onclick="rebuildIndex()">⟳ Reindex</button>
+  <button id="trash-btn" title="Trash" onclick="toggleTrash()">🗑</button>
   <button id="new-btn" onclick="newMemo()">+ New Memo</button>
 </header>
+
+<div id="trash-bar">
+  <span id="trash-bar-label">Trashed memos</span>
+  <button onclick="emptyTrash()" class="empty-btn">Empty trash</button>
+  <button onclick="toggleTrash()">← Back</button>
+</div>
 
 <div id="tag-bar">
   <button class="tag-pill active" data-tag="" onclick="filterTag(this,'')">All</button>
@@ -167,7 +186,7 @@ function fileUrl(memoId, key) {
   return WORKER + '/memos/' + memoId + '/files/' + key.split('/').map(encodeURIComponent).join('/') + '?t=' + encodeURIComponent(token);
 }
 
-function renderMemos(memos) {
+function renderMemos(memos, trashMode = false) {
   const grid = document.getElementById('grid');
   grid.querySelectorAll('.memo-card').forEach(c => c.remove());
   document.getElementById('empty').style.display = memos.length ? 'none' : 'block';
@@ -176,7 +195,7 @@ function renderMemos(memos) {
     const cover = m.cover_file ? fileUrl(m.id, m.cover_file) : '';
     const card = document.createElement('div');
     card.className = 'memo-card';
-    card.onclick = () => location.href = 'memo/?id=' + m.id;
+    if (!trashMode) card.onclick = () => location.href = 'memo/?id=' + m.id;
     card.innerHTML = `
       <div class="card-cover ${cover ? '' : 'no-cover'}" ${cover ? `style="background-image:url('${esc(cover)}')"` : ''}></div>
       <div class="card-body">
@@ -184,12 +203,17 @@ function renderMemos(memos) {
         <div class="card-title ${m.title ? '' : 'untitled'}">${esc(m.title || 'Untitled')}</div>
         ${m.description ? `<div class="card-desc">${esc(m.description)}</div>` : ''}
         ${tags.length ? `<div class="card-tags">${tags.map(t=>`<span class="card-tag">${esc(t)}</span>`).join('')}</div>` : ''}
+        ${trashMode ? `
+        <div class="card-trash-actions">
+          <button class="restore-btn" onclick="restoreMemo(event,'${m.id}')">↩ Restore</button>
+          <button class="perm-btn" onclick="permanentDelete(event,'${m.id}')">Delete forever</button>
+        </div>` : `
         <div class="card-footer">
           <span class="card-date">${fmtDate(m.created_at)}</span>
           ${m.uid ? `<span class="card-uid" title="${esc(m.uid)}">${esc(m.uid)}</span>` : ''}
           <button class="btn-icon ${m.pinned?'pinned':''}" title="${m.pinned?'Unpin':'Pin'}" onclick="togglePin(event,'${m.id}',${m.pinned})">📌</button>
-          <button class="btn-icon" title="Delete" onclick="deleteMemo(event,'${m.id}')">🗑</button>
-        </div>
+          <button class="btn-icon" title="Move to trash" onclick="deleteMemo(event,'${m.id}')">🗑</button>
+        </div>`}
       </div>`;
     grid.appendChild(card);
   });
@@ -230,10 +254,51 @@ async function togglePin(e, id, pinned) {
   } catch {}
 }
 
+let inTrash = false;
+
 async function deleteMemo(e, id) {
   e.stopPropagation();
-  if (!confirm('Delete this memo and all its files? This cannot be undone.')) return;
-  try { await api('/memos/' + id, { method:'DELETE' }); loadMemos(); loadTags(); } catch {}
+  try { await api('/memos/' + id, { method:'DELETE' }); loadMemos(); } catch {}
+}
+
+function toggleTrash() {
+  inTrash = !inTrash;
+  document.getElementById('trash-btn').classList.toggle('active', inTrash);
+  document.getElementById('trash-bar').style.display = inTrash ? 'flex' : 'none';
+  document.getElementById('tag-bar').style.display = inTrash ? 'none' : '';
+  document.getElementById('new-btn').style.display = inTrash ? 'none' : '';
+  document.getElementById('search-input').value = '';
+  if (inTrash) loadTrash(); else loadMemos();
+}
+
+async function loadTrash() {
+  try {
+    const memos = await (await api('/memos?trash=1')).json();
+    document.getElementById('trash-bar-label').textContent =
+      memos.length ? `${memos.length} trashed memo${memos.length !== 1 ? 's' : ''}` : 'Trash is empty';
+    renderMemos(memos, true);
+  } catch {}
+}
+
+async function restoreMemo(e, id) {
+  e.stopPropagation();
+  try { await api('/memos/' + id + '/restore', { method:'POST' }); loadTrash(); } catch {}
+}
+
+async function permanentDelete(e, id) {
+  e.stopPropagation();
+  if (!confirm('Permanently delete this memo and all its files? This cannot be undone.')) return;
+  try { await api('/memos/' + id + '?permanent=1', { method:'DELETE' }); loadTrash(); } catch {}
+}
+
+async function emptyTrash() {
+  if (!confirm('Permanently delete all trashed memos and their files? This cannot be undone.')) return;
+  try {
+    const memos = await (await api('/memos?trash=1')).json();
+    await Promise.all(memos.map(m => api('/memos/' + m.id + '?permanent=1', { method:'DELETE' })));
+    loadTrash();
+    loadTags();
+  } catch {}
 }
 
 async function rebuildIndex() {

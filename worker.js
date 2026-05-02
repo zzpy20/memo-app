@@ -110,7 +110,7 @@ export default {
         const { results } = await env.MEMO_D1.prepare(
           `SELECT m.id,m.memo_id,m.uid,m.title,m.description,m.cover_file,m.tags,m.pinned,m.created_at,m.updated_at
            FROM memos_fts JOIN memos m ON memos_fts.id=m.id
-           WHERE memos_fts MATCH ? ORDER BY rank LIMIT 50`
+           WHERE memos_fts MATCH ? AND (m.deleted_at IS NULL OR m.deleted_at='') ORDER BY rank LIMIT 50`
         ).bind(sanitizeFTS(q)).all();
         return json(results || [], 200, h);
       } catch { return json([], 200, h); }
@@ -128,16 +128,26 @@ export default {
 
     // ── List memos ────────────────────────────────────────────────────────────
     if (path === '/memos' && method === 'GET') {
+      try { await env.MEMO_D1.prepare("ALTER TABLE memos ADD COLUMN deleted_at TEXT DEFAULT NULL").run(); } catch {}
+      const trash = url.searchParams.get('trash') === '1';
       const tag = url.searchParams.get('tag') || '';
-      const stmt = tag
-        ? env.MEMO_D1.prepare(
-            `SELECT id,memo_id,uid,title,description,cover_file,tags,pinned,created_at,updated_at
-             FROM memos WHERE tags LIKE ? ORDER BY pinned DESC,created_at DESC LIMIT 500`
-          ).bind('%' + tag.replace(/[%_]/g, '') + '%')
-        : env.MEMO_D1.prepare(
-            `SELECT id,memo_id,uid,title,description,cover_file,tags,pinned,created_at,updated_at
-             FROM memos ORDER BY pinned DESC,created_at DESC LIMIT 500`
-          );
+      let stmt;
+      if (trash) {
+        stmt = env.MEMO_D1.prepare(
+          `SELECT id,memo_id,uid,title,description,cover_file,tags,pinned,created_at,updated_at,deleted_at
+           FROM memos WHERE deleted_at IS NOT NULL AND deleted_at!='' ORDER BY deleted_at DESC LIMIT 500`
+        );
+      } else if (tag) {
+        stmt = env.MEMO_D1.prepare(
+          `SELECT id,memo_id,uid,title,description,cover_file,tags,pinned,created_at,updated_at
+           FROM memos WHERE (deleted_at IS NULL OR deleted_at='') AND tags LIKE ? ORDER BY pinned DESC,created_at DESC LIMIT 500`
+        ).bind('%' + tag.replace(/[%_]/g, '') + '%');
+      } else {
+        stmt = env.MEMO_D1.prepare(
+          `SELECT id,memo_id,uid,title,description,cover_file,tags,pinned,created_at,updated_at
+           FROM memos WHERE deleted_at IS NULL OR deleted_at='' ORDER BY pinned DESC,created_at DESC LIMIT 500`
+        );
+      }
       const { results } = await stmt.all();
       return json(results || [], 200, h);
     }
@@ -301,12 +311,24 @@ export default {
         return json({ ok: true }, 200, h);
       }
       if (method === 'DELETE') {
-        const p = pfx(id);
-        const listed = await env.MEMO_R2.list({ prefix: p, limit: 1000 });
-        for (const obj of listed.objects) await env.MEMO_R2.delete(obj.key);
-        await env.MEMO_D1.prepare('DELETE FROM memos WHERE id=?').bind(id).run();
+        if (url.searchParams.get('permanent') === '1') {
+          const p = pfx(id);
+          const listed = await env.MEMO_R2.list({ prefix: p, limit: 1000 });
+          for (const obj of listed.objects) await env.MEMO_R2.delete(obj.key);
+          await env.MEMO_D1.prepare('DELETE FROM memos WHERE id=?').bind(id).run();
+        } else {
+          await env.MEMO_D1.prepare('UPDATE memos SET deleted_at=? WHERE id=?').bind(nowISO(), id).run();
+        }
         return json({ ok: true }, 200, h);
       }
+    }
+
+    // ── Restore trashed memo ──────────────────────────────────────────────────
+    m = path.match(/^\/memos\/([^/]+)\/restore$/);
+    if (m && method === 'POST') {
+      const id = dec(m[1]);
+      await env.MEMO_D1.prepare("UPDATE memos SET deleted_at=NULL WHERE id=?").bind(id).run();
+      return json({ ok: true }, 200, h);
     }
 
     // ── Snippets ──────────────────────────────────────────────────────────────
