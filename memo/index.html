@@ -155,6 +155,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .drop-zone-icon{font-size:1.1rem;opacity:.4;margin-bottom:2px}
 .drop-zone-text{font-size:.82rem;color:var(--muted)}
 .drop-zone-text b{color:var(--accent);font-weight:500}
+#upload-progress{display:none;margin:8px 0 0}
+#upload-bar{height:4px;background:#e2e8f0;border-radius:2px;overflow:hidden}
+#upload-bar-fill{height:100%;background:var(--accent);width:0%;transition:width .15s}
+#upload-bar-text{font-size:.72rem;color:var(--muted);margin-top:3px}
 
 .fb-toolbar{border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .fb-left{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
@@ -300,6 +304,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #lb-prev:hover,#lb-next:hover{background:rgba(255,255,255,.22)}
 #lb-content img{max-width:90vw;max-height:85vh;object-fit:contain;border-radius:4px;display:block}
 #lb-content iframe{width:80vw;height:85vh;border:none;border-radius:4px;background:#fff;display:block}
+#lb-content video{max-width:90vw;max-height:85vh;border-radius:4px;display:block;background:#000}
+.video-grid-preview{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2.2rem;background:#1c1917;color:rgba(255,255,255,.75)}
+.video-row-thumb{background:#1c1917;color:rgba(255,255,255,.75);display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer}
 #lb-caption{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.75);font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80vw}
 #lb-counter{position:absolute;top:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.55);font-size:.78rem}
 
@@ -439,6 +446,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="drop-zone-icon">↑</div>
     <div class="drop-zone-text" id="drop-zone-text">Drop files here · or <b>click to browse</b></div>
     <input type="file" id="file-input" multiple hidden>
+    <div id="upload-progress">
+      <div id="upload-bar"><div id="upload-bar-fill"></div></div>
+      <div id="upload-bar-text"></div>
+    </div>
   </div>
 
   <!-- Toolbar -->
@@ -499,6 +510,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <button class="bulk-action" onclick="showBulkMoveMenu(event)">Move</button>
   <span class="bulk-sep">|</span>
   <button class="bulk-action bulk-del" onclick="bulkTrash()">Delete</button>
+  <span class="bulk-sep">|</span>
+  <button class="bulk-action" onclick="bulkDownload()">↓ Download</button>
   <button class="bulk-cancel bulk-action" onclick="deselectAll()">Cancel</button>
 </div>
 
@@ -584,9 +597,11 @@ let sortDir = 1;
 let dragKey = null;
 
 const IMG_EXTS = new Set(['jpg','jpeg','png','gif','webp','heic','avif','bmp','svg','tiff']);
+const VIDEO_EXTS = new Set(['mp4','mov','webm','avi','mkv','m4v']);
 const isImg = n => IMG_EXTS.has(ext(n));
+const isVideo = n => VIDEO_EXTS.has(ext(n));
 const isPdf = n => ext(n) === 'pdf';
-const isPreviewable = n => isImg(n) || isPdf(n);
+const isPreviewable = n => isImg(n) || isPdf(n) || isVideo(n);
 const ext = n => (n.split('.').pop()||'').toLowerCase();
 const basename = n => n.split('/').pop();
 
@@ -742,7 +757,9 @@ function renderFileList() {
       card.dataset.key = f.key;
       const thumbHtml = isImg(f.key)
         ? `<img src="${fileUrl(f.key)}" loading="lazy" alt="" data-preview="1">`
-        : `<div class="grid-icon">${fileIcon(f.key)}</div>`;
+        : isVideo(f.key)
+          ? `<div class="video-grid-preview">▶</div>`
+          : `<div class="grid-icon">${fileIcon(f.key)}</div>`;
       card.innerHTML = `
         <div class="grid-cb" onclick="toggleSelect('${esc(f.key)}');event.stopPropagation()">✓</div>
         <div class="grid-thumb" onclick="${isPreviewable(f.key) ? `openLightbox('${esc(f.key)}')` : `downloadFile('${esc(f.key)}')`}">${thumbHtml}</div>
@@ -783,7 +800,9 @@ function renderFileList() {
       row.dataset.key = f.key;
       const thumbHtml = isImg(f.key)
         ? `<img class="file-row-thumb" src="${fileUrl(f.key)}" loading="lazy" alt="" data-preview="1" onclick="openLightbox('${esc(f.key)}')">`
-        : `<div class="file-row-icon">${fileIcon(f.key)}</div>`;
+        : isVideo(f.key)
+          ? `<div class="file-row-thumb video-row-thumb" onclick="openLightbox('${esc(f.key)}')">▶</div>`
+          : `<div class="file-row-icon">${fileIcon(f.key)}</div>`;
       row.innerHTML = `
         <div class="file-cb" onclick="toggleSelect('${esc(f.key)}')">✓</div>
         ${thumbHtml}
@@ -1043,14 +1062,27 @@ fileInput.addEventListener('change', async () => { await uploadFiles(Array.from(
 
 async function uploadFiles(files) {
   if (!files.length) return;
-  const txt = document.getElementById('drop-zone-text');
-  txt.innerHTML = `Uploading ${files.length} file${files.length > 1 ? 's' : ''}…`;
-  for (const file of files) {
-    const fd = new FormData(); fd.append('file', file);
-    if (currentFolder) fd.append('folder', currentFolder);
-    try { await api('/memos/' + memoId + '/files', { method: 'POST', body: fd }); } catch {}
+  const prog = document.getElementById('upload-progress');
+  const fill = document.getElementById('upload-bar-fill');
+  const barText = document.getElementById('upload-bar-text');
+  prog.style.display = '';
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    barText.textContent = files.length > 1 ? `${file.name} (${i + 1} of ${files.length})` : file.name;
+    fill.style.width = '0%';
+    await new Promise(resolve => {
+      const fd = new FormData(); fd.append('file', file);
+      if (currentFolder) fd.append('folder', currentFolder);
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', WORKER + '/memos/' + memoId + '/files?t=' + encodeURIComponent(token));
+      xhr.upload.onprogress = e => { if (e.lengthComputable) fill.style.width = (e.loaded / e.total * 100) + '%'; };
+      xhr.onload = () => { if (xhr.status === 401) logout(); fill.style.width = '100%'; resolve(); };
+      xhr.onerror = resolve;
+      xhr.send(fd);
+    });
   }
-  txt.innerHTML = 'Drop files here · or <b>click to browse</b>';
+  prog.style.display = 'none';
+  fill.style.width = '0%';
   await loadFiles();
 }
 
@@ -1093,6 +1125,37 @@ async function clearAll() {
     } catch {}
   }
   await saveMeta(); await loadFiles(); renderTrashCount();
+}
+
+// ── Bulk download ─────────────────────────────────────────────────────────────
+
+async function bulkDownload() {
+  const keys = [...selectedFiles]; if (!keys.length) return;
+  if (keys.length === 1) { downloadFile(keys[0]); return; }
+  const btn = [...document.querySelectorAll('.bulk-action')].find(b => b.textContent.includes('Download'));
+  if (btn) { btn.textContent = '…'; btn.disabled = true; }
+  try {
+    if (!window.JSZip) {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
+    const zip = new JSZip();
+    await Promise.all(keys.map(async key => {
+      const r = await fetch(fileUrl(key));
+      if (r.ok) zip.file(basename(key), await r.blob());
+    }));
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `files-${(memo && memo.memo_id) || memoId}.zip`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch(e) { console.error('bulkDownload:', e); }
+  if (btn) { btn.textContent = '↓ Download'; btn.disabled = false; }
 }
 
 // ── Bulk tag ──────────────────────────────────────────────────────────────────
@@ -1163,14 +1226,27 @@ function showLightbox() {
   document.getElementById('lightbox').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
   const c = document.getElementById('lb-content');
-  c.innerHTML = isPdf(f.key) ? `<iframe src="${fileUrl(f.key)}"></iframe>` : `<img src="${fileUrl(f.key)}" alt="${esc(basename(f.key))}">`;
+  const prev = c.querySelector('video'); if (prev) { prev.pause(); prev.src = ''; }
+  if (isVideo(f.key)) {
+    c.innerHTML = `<video src="${fileUrl(f.key)}" controls autoplay playsinline></video>`;
+  } else if (isPdf(f.key)) {
+    c.innerHTML = `<iframe src="${fileUrl(f.key)}"></iframe>`;
+  } else {
+    c.innerHTML = `<img src="${fileUrl(f.key)}" alt="${esc(basename(f.key))}">`;
+  }
   document.getElementById('lb-caption').textContent = basename(f.key);
   document.getElementById('lb-counter').textContent = lbFiles.length > 1 ? `${lbIdx + 1} / ${lbFiles.length}` : '';
   const multi = lbFiles.length > 1;
   document.getElementById('lb-prev').style.display = multi ? '' : 'none';
   document.getElementById('lb-next').style.display = multi ? '' : 'none';
 }
-function closeLightbox() { document.getElementById('lightbox').classList.add('hidden'); document.getElementById('lb-content').innerHTML = ''; document.body.style.overflow = ''; }
+function closeLightbox() {
+  const c = document.getElementById('lb-content');
+  const v = c.querySelector('video'); if (v) { v.pause(); v.src = ''; }
+  c.innerHTML = '';
+  document.getElementById('lightbox').classList.add('hidden');
+  document.body.style.overflow = '';
+}
 function lbNav(dir) { lbIdx = (lbIdx + dir + lbFiles.length) % lbFiles.length; showLightbox(); }
 document.getElementById('lightbox').addEventListener('click', e => { if (e.target === document.getElementById('lightbox')) closeLightbox(); });
 document.addEventListener('keydown', e => {
