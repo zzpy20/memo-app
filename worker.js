@@ -131,6 +131,10 @@ export default {
       try { await env.MEMO_D1.prepare("ALTER TABLE memos ADD COLUMN deleted_at TEXT DEFAULT NULL").run(); } catch {}
       const trash = url.searchParams.get('trash') === '1';
       const tag = url.searchParams.get('tag') || '';
+      const sort = url.searchParams.get('sort') || 'newest';
+      const order = sort === 'oldest' ? 'pinned DESC,created_at ASC'
+                  : sort === 'updated' ? 'pinned DESC,updated_at DESC'
+                  : 'pinned DESC,created_at DESC';
       let stmt;
       if (trash) {
         stmt = env.MEMO_D1.prepare(
@@ -140,12 +144,12 @@ export default {
       } else if (tag) {
         stmt = env.MEMO_D1.prepare(
           `SELECT id,memo_id,uid,title,description,cover_file,tags,pinned,created_at,updated_at
-           FROM memos WHERE (deleted_at IS NULL OR deleted_at='') AND tags LIKE ? ORDER BY pinned DESC,created_at DESC LIMIT 500`
+           FROM memos WHERE (deleted_at IS NULL OR deleted_at='') AND tags LIKE ? ORDER BY ${order} LIMIT 500`
         ).bind('%' + tag.replace(/[%_]/g, '') + '%');
       } else {
         stmt = env.MEMO_D1.prepare(
           `SELECT id,memo_id,uid,title,description,cover_file,tags,pinned,created_at,updated_at
-           FROM memos WHERE deleted_at IS NULL OR deleted_at='' ORDER BY pinned DESC,created_at DESC LIMIT 500`
+           FROM memos WHERE deleted_at IS NULL OR deleted_at='' ORDER BY ${order} LIMIT 500`
         );
       }
       const { results } = await stmt.all();

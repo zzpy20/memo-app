@@ -61,8 +61,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .qm-uid input{border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:.85rem;font-family:inherit;width:150px;color:var(--text);background:transparent}
 .qm-uid input:focus{outline:none;border-color:var(--accent)}
 .qm-sep{width:1px;height:20px;background:var(--border);flex-shrink:0}
-.qm-tags{display:flex;align-items:center;gap:8px;flex:1;min-width:180px}
+.qm-tags{display:flex;align-items:center;gap:8px;flex:1;min-width:180px;position:relative}
 .qm-tags .tag-input-wrap{flex:1;padding:4px 8px;min-height:32px}
+#tag-suggestions{position:absolute;top:100%;left:0;min-width:160px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);z-index:200;overflow:hidden;margin-top:2px}
+.tag-sug-item{padding:7px 12px;font-size:.83rem;cursor:pointer;color:var(--text)}
+.tag-sug-item:hover,.tag-sug-item.hi{background:var(--bg);color:var(--accent)}
 #note-editor img[data-paste-img]{cursor:pointer;border-radius:4px;display:block;margin:6px 0}
 #note-editor img[data-paste-img]:hover{outline:2px solid var(--accent)}
 
@@ -324,6 +327,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <button class="btn-icon" id="pin-btn" title="Pin" onclick="togglePin()">📌</button>
   <button class="btn-icon" id="dup-btn" title="Duplicate memo" onclick="duplicateMemo()">⧉</button>
   <button class="btn-icon" title="Print label" onclick="printLabel()">🏷</button>
+  <button class="btn-icon" title="Move to trash" onclick="trashMemo()">🗑</button>
   <button id="signout-btn" onclick="logout()">Sign out</button>
 </div>
 
@@ -347,8 +351,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="qm-tags">
     <span class="qm-label">Tags</span>
     <div class="tag-input-wrap" id="tag-wrap" onclick="document.getElementById('tag-text-input').focus()">
-      <input type="text" id="tag-text-input" placeholder="Add tag, press Enter…">
+      <input type="text" id="tag-text-input" placeholder="Add tag, press Enter…" autocomplete="off">
     </div>
+    <div id="tag-suggestions" style="display:none"></div>
   </div>
 </div>
 
@@ -617,6 +622,7 @@ async function init() {
   await loadFiles();
   loadNote();
   loadSnippets();
+  loadTagSuggestions();
 }
 
 async function loadMemo() {
@@ -1331,6 +1337,10 @@ async function togglePin() {
   document.getElementById('pin-btn').classList.toggle('active', !!memo.pinned);
   await saveInfo();
 }
+async function trashMemo() {
+  if (!confirm('Move this memo to trash?')) return;
+  try { await api('/memos/' + memoId, { method: 'DELETE' }); location.href = '../'; } catch {}
+}
 async function duplicateMemo() {
   const btn = document.getElementById('dup-btn');
   btn.textContent = '…'; btn.disabled = true;
@@ -1392,10 +1402,45 @@ function renderTags(tags) {
 }
 function removeTag(t) { renderTags(currentTags.filter(x => x !== t)); saveInfo(); }
 function getTagsFromUI() { return [...currentTags]; }
+
+let allTagSuggestions = [];
+async function loadTagSuggestions() {
+  try { allTagSuggestions = (await (await api('/tags')).json()).map(t => t.tag); } catch {}
+}
+
+function showTagSuggestions(val) {
+  const drop = document.getElementById('tag-suggestions');
+  const matches = allTagSuggestions.filter(t => t.startsWith(val) && !currentTags.includes(t));
+  if (!val || !matches.length) { drop.style.display = 'none'; return; }
+  drop.innerHTML = matches.slice(0, 6).map(t =>
+    `<div class="tag-sug-item" data-tag="${esc(t)}" onmousedown="selectTagSug('${esc(t)}')">${esc(t)}</div>`
+  ).join('');
+  drop.style.display = '';
+}
+
+function selectTagSug(tag) {
+  document.getElementById('tag-text-input').value = '';
+  document.getElementById('tag-suggestions').style.display = 'none';
+  if (!currentTags.includes(tag)) { currentTags.push(tag); renderTags(currentTags); saveInfo(); }
+}
+
+document.getElementById('tag-text-input').addEventListener('input', e => {
+  showTagSuggestions(e.target.value.trim().toLowerCase());
+});
+document.getElementById('tag-text-input').addEventListener('blur', () => {
+  setTimeout(() => { document.getElementById('tag-suggestions').style.display = 'none'; }, 150);
+});
 document.getElementById('tag-text-input').addEventListener('keydown', e => {
+  const drop = document.getElementById('tag-suggestions');
+  if (e.key === 'Tab') {
+    const first = drop.querySelector('.tag-sug-item');
+    if (drop.style.display !== 'none' && first) { e.preventDefault(); selectTagSug(first.dataset.tag); return; }
+  }
+  if (e.key === 'Escape') { drop.style.display = 'none'; return; }
   if (e.key === 'Enter' || e.key === ',') {
     e.preventDefault(); const val = e.target.value.trim().replace(/,$/, '');
     const lval = val.toLowerCase();
+    drop.style.display = 'none';
     if (lval && !currentTags.includes(lval)) { currentTags.push(lval); renderTags(currentTags); saveInfo(); }
     e.target.value = '';
   }

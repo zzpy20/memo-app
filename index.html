@@ -42,6 +42,8 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 #trash-count{background:var(--danger);color:#fff;font-size:.65rem;font-weight:700;border-radius:10px;padding:1px 5px;line-height:1.4;display:none}
 #signout-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:.82rem;cursor:pointer;color:var(--muted);flex-shrink:0;font-family:inherit}
 #signout-btn:hover{border-color:var(--text);color:var(--text)}
+#sort-select{border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:.82rem;font-family:inherit;background:var(--surface);color:var(--muted);cursor:pointer;flex-shrink:0}
+#sort-select:focus{outline:none;border-color:var(--accent)}
 
 #tag-bar{padding:10px 24px;display:flex;gap:8px;flex-wrap:wrap;background:var(--surface);border-bottom:1px solid var(--border)}
 .tag-pill{padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;font-size:.82rem;font-family:inherit;cursor:pointer;color:var(--muted);transition:all .1s;display:inline-flex;align-items:center;gap:5px}
@@ -139,6 +141,11 @@ main{padding:24px 52px 24px 24px;display:grid;grid-template-columns:repeat(auto-
     <input type="search" id="search-input" placeholder="Search memos…" oninput="onSearch(this.value)">
   </div>
   <button id="rebuild-btn" title="Rebuild search index — run this after deploying a worker update, or if search results seem stale. Takes a few seconds." onclick="rebuildIndex()">⟳ Reindex</button>
+  <select id="sort-select" onchange="setSort(this.value)">
+    <option value="newest">Newest</option>
+    <option value="oldest">Oldest</option>
+    <option value="updated">Recently updated</option>
+  </select>
   <div class="view-btns">
     <button class="view-btn" id="view-grid-btn" title="Grid view" onclick="setViewMode('grid')">⊞</button>
     <button class="view-btn" id="view-list-btn" title="List view" onclick="setViewMode('list')">☰</button>
@@ -174,7 +181,7 @@ main{padding:24px 52px 24px 24px;display:grid;grid-template-columns:repeat(auto-
 <script>
 const WORKER = 'https://memo-worker.ausz.workers.dev';
 let token = localStorage.getItem('memo_token') || '';
-let allMemos = [], currentTag = '', searchTimer, viewMode = localStorage.getItem('memo_view') || 'grid';
+let allMemos = [], currentTag = '', searchTimer, viewMode = localStorage.getItem('memo_view') || 'grid', currentSort = localStorage.getItem('memo_sort') || 'newest';
 
 function api(path, opts = {}) {
   const sep = path.includes('?') ? '&' : '?';
@@ -224,6 +231,7 @@ async function init() {
   if (!r || !r.ok) { document.getElementById('auth-overlay').classList.remove('hidden'); return; }
   document.getElementById('auth-overlay').classList.add('hidden');
   setViewMode(viewMode);
+  document.getElementById('sort-select').value = currentSort;
   loadTags();
   loadMemos();
   updateTrashCount();
@@ -245,10 +253,17 @@ async function loadTags() {
   } catch {}
 }
 
+function setSort(val) {
+  currentSort = val;
+  localStorage.setItem('memo_sort', val);
+  loadMemos();
+}
+
 async function loadMemos(tag) {
   tag = tag ?? currentTag;
   try {
-    const path = tag ? '/memos?tag=' + encodeURIComponent(tag) : '/memos';
+    let path = tag ? '/memos?tag=' + encodeURIComponent(tag) : '/memos';
+    path += (path.includes('?') ? '&' : '?') + 'sort=' + currentSort;
     allMemos = await (await api(path)).json();
     renderMemos(allMemos);
     if (viewMode === 'grid') buildTimeline();
@@ -279,7 +294,7 @@ function renderMemos(memos, trashMode = false) {
       row.innerHTML = `
         <div class="lr-cover ${cover ? '' : 'no-cover'}" ${cover ? `style="background-image:url('${esc(cover)}')"` : ''}></div>
         <div class="lr-main">
-          <div class="lr-title ${m.title ? '' : 'untitled'}">${esc(m.title || 'Untitled')}</div>
+          <div class="lr-title ${m.title ? '' : 'untitled'}">${m.pinned ? '📌 ' : ''}${esc(m.title || 'Untitled')}</div>
           <div class="lr-sub">${esc(sub)}</div>
         </div>
         <div class="lr-tags">${tags.map(t=>`<span class="card-tag">${esc(t)}</span>`).join('')}</div>
