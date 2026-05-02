@@ -68,6 +68,7 @@ async function syncSearchText(env, id, noteHtml, meta) {
       stripHtml(noteHtml),
       Object.keys(files).join(' '),
       Object.values(files).flatMap(f => f.tags || []).join(' '),
+      Object.values(files).map(f => f.caption || '').filter(Boolean).join(' '),
     ];
     const searchText = parts.filter(Boolean).join(' ').slice(0, 50000);
     await env.MEMO_D1.prepare('UPDATE memos SET search_text=? WHERE id=?').bind(searchText, id).run();
