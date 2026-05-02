@@ -52,9 +52,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #note-editor img[data-paste-img]{cursor:pointer;border-radius:4px;display:block;margin:6px 0}
 #note-editor img[data-paste-img]:hover{outline:2px solid var(--accent)}
 
-.section{background:var(--surface);border-top:1px solid var(--border)}
+.section{background:var(--surface);border-top:1px solid var(--border);border-left:3px solid var(--accent);margin-left:12px}
 .section summary{padding:14px 20px;cursor:pointer;font-size:.82rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text);display:flex;align-items:center;justify-content:space-between;list-style:none;user-select:none}
-.section summary::before{content:'';display:inline-block;width:3px;height:.9em;background:var(--accent);border-radius:2px;margin-right:8px;flex-shrink:0}
 .section summary::-webkit-details-marker{display:none}
 .section summary:hover{color:var(--accent)}
 .section summary .s-right{font-size:.75rem;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0}
