@@ -45,6 +45,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .btn-icon{background:none;border:none;cursor:pointer;padding:5px 7px;border-radius:7px;font-size:.95rem;opacity:.45;line-height:1;transition:opacity .1s;flex-shrink:0}
 .btn-icon:hover{opacity:1;background:var(--bg)}
 .btn-icon.active{opacity:1}
+#signout-btn{background:none;border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:.78rem;cursor:pointer;color:var(--muted);font-family:inherit;flex-shrink:0}
+#signout-btn:hover{border-color:var(--text);color:var(--text)}
 
 .title-section{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px 14px}
 #title-input{width:100%;border:none;outline:none;font-size:1.5rem;font-weight:600;font-family:inherit;color:var(--text);background:transparent;margin-bottom:6px;display:block}
@@ -115,6 +117,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .snippet-foot{display:flex;justify-content:flex-end;padding:6px 14px;border-top:1px solid var(--border)}
 .snippet-foot button{padding:4px 12px;border:1px solid var(--border);border-radius:6px;font-size:.78rem;cursor:pointer;background:transparent;font-family:inherit;color:var(--muted)}
 .snippet-foot button:hover{border-color:var(--accent);color:var(--accent)}
+.snippets-hdr{display:flex;align-items:center;justify-content:space-between;margin-top:16px;margin-bottom:4px}
+.snippets-hdr-label{font-size:.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+#export-clips-btn{padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.75rem;cursor:pointer;background:transparent;font-family:inherit;color:var(--muted)}
+#export-clips-btn:hover{border-color:var(--accent);color:var(--accent)}
 
 .field-group{margin-bottom:14px}
 .field-label{font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;display:block}
@@ -316,7 +322,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <span id="memo-id-badge" class="memo-id-badge">…</span>
   <div class="header-spacer"></div>
   <button class="btn-icon" id="pin-btn" title="Pin" onclick="togglePin()">📌</button>
+  <button class="btn-icon" id="dup-btn" title="Duplicate memo" onclick="duplicateMemo()">⧉</button>
   <button class="btn-icon" title="Print label" onclick="printLabel()">🏷</button>
+  <button id="signout-btn" onclick="logout()">Sign out</button>
 </div>
 
 <div class="gsearch-wrap">
@@ -387,6 +395,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       </div>
     </div>
 
+    <div class="snippets-hdr" id="snippets-hdr" style="display:none">
+      <span class="snippets-hdr-label" id="snippets-count"></span>
+      <button id="export-clips-btn" onclick="exportClips()">⬇ Export .md</button>
+    </div>
     <div class="snippets-area" id="snippets-area"></div>
   </div>
 </details>
@@ -394,6 +406,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <details class="section">
   <summary>Memo Info</summary>
   <div class="section-body">
+    <div class="field-group">
+      <label class="field-label">Created</label>
+      <input type="date" id="created-date-input" class="field-input" style="width:auto">
+    </div>
     <div class="field-group">
       <label class="field-label">Cover Image</label>
       <select id="cover-select" class="field-input"><option value="">— None —</option></select>
@@ -612,6 +628,9 @@ async function loadMemo() {
   autoGrow(document.getElementById('desc-input'));
   document.getElementById('pin-btn').classList.toggle('active', !!memo.pinned);
   document.getElementById('uid-input').value = memo.uid || '';
+  if (memo.created_at) {
+    document.getElementById('created-date-input').value = memo.created_at.slice(0, 10);
+  }
   renderTags(safeJson(memo.tags, []));
   renderLinks(safeJson(memo.links, []));
 }
@@ -1312,17 +1331,29 @@ async function togglePin() {
   document.getElementById('pin-btn').classList.toggle('active', !!memo.pinned);
   await saveInfo();
 }
+async function duplicateMemo() {
+  const btn = document.getElementById('dup-btn');
+  btn.textContent = '…'; btn.disabled = true;
+  try {
+    const r = await (await api('/memos/' + memoId + '/duplicate', { method: 'POST' })).json();
+    location.href = '../memo/?id=' + r.id;
+  } catch {
+    btn.textContent = '⧉'; btn.disabled = false;
+  }
+}
 async function saveInfo() {
   const st = document.getElementById('info-status');
   if (st) st.textContent = 'Saving…';
   try {
-    await api('/memos/' + memoId, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    const res = await api('/memos/' + memoId, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: document.getElementById('title-input').value.trim(), description: document.getElementById('desc-input').value.trim(),
         uid: document.getElementById('uid-input').value.trim(), cover_file: document.getElementById('cover-select').value,
-        tags: getTagsFromUI(), links: getLinksFromUI(), pinned: memo ? memo.pinned : 0 }) });
+        tags: getTagsFromUI(), links: getLinksFromUI(), pinned: memo ? memo.pinned : 0,
+        created_at: document.getElementById('created-date-input')?.value || '' }) });
+    if (!res.ok) { const err = await res.json().catch(() => ({})); console.error('saveInfo error', res.status, err); if (st) st.textContent = 'Error ' + res.status; return; }
     if (memo) { memo.uid = document.getElementById('uid-input').value.trim(); }
     if (st) { st.textContent = 'Saved ✓'; setTimeout(() => { if (st) st.textContent = ''; }, 2000); }
-  } catch { if (st) st.textContent = 'Error'; }
+  } catch(e) { console.error('saveInfo failed:', e); if (st) st.textContent = 'Error'; }
 }
 document.getElementById('title-input').addEventListener('change', saveInfo);
 document.getElementById('desc-input').addEventListener('change', saveInfo);
@@ -1359,12 +1390,13 @@ function renderTags(tags) {
     wrap.insertBefore(chip, document.getElementById('tag-text-input'));
   });
 }
-function removeTag(t) { renderTags(currentTags.filter(x => x !== t)); }
+function removeTag(t) { renderTags(currentTags.filter(x => x !== t)); saveInfo(); }
 function getTagsFromUI() { return [...currentTags]; }
 document.getElementById('tag-text-input').addEventListener('keydown', e => {
   if (e.key === 'Enter' || e.key === ',') {
     e.preventDefault(); const val = e.target.value.trim().replace(/,$/, '');
-    if (val && !currentTags.includes(val)) { currentTags.push(val); renderTags(currentTags); }
+    const lval = val.toLowerCase();
+    if (lval && !currentTags.includes(lval)) { currentTags.push(lval); renderTags(currentTags); saveInfo(); }
     e.target.value = '';
   }
 });
@@ -1539,6 +1571,9 @@ async function saveClip() {
 
 function renderSnippets() {
   const area = document.getElementById('snippets-area');
+  const hdr = document.getElementById('snippets-hdr');
+  hdr.style.display = snippets.length ? '' : 'none';
+  document.getElementById('snippets-count').textContent = `Clips (${snippets.length})`;
   if (!snippets.length) { area.innerHTML = ''; return; }
   area.innerHTML = snippets.map((s, i) => `
     <div class="snippet-card">
@@ -1588,6 +1623,78 @@ async function copyClipText(i) {
   if (!s) return;
   const text = new DOMParser().parseFromString(s.content, 'text/html').body.innerText;
   try { await navigator.clipboard.writeText(text); } catch {}
+}
+
+function htmlToMd(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  function walk(node) {
+    if (node.nodeType === 3) return node.textContent;
+    if (node.nodeType !== 1) return '';
+    const tag = node.tagName.toLowerCase();
+    const inner = () => Array.from(node.childNodes).map(walk).join('');
+    switch (tag) {
+      case 'br': return '\n';
+      case 'p': case 'div': { const c = inner(); return c ? c + '\n' : ''; }
+      case 'b': case 'strong': return `**${inner()}**`;
+      case 'i': case 'em': return `*${inner()}*`;
+      case 'u': return inner();
+      case 's': case 'del': case 'strike': return `~~${inner()}~~`;
+      case 'mark': return `==${inner()}==`;
+      case 'h1': return `\n# ${inner()}\n`;
+      case 'h2': return `\n## ${inner()}\n`;
+      case 'h3': return `\n### ${inner()}\n`;
+      case 'h4': return `\n#### ${inner()}\n`;
+      case 'h5': return `\n##### ${inner()}\n`;
+      case 'h6': return `\n###### ${inner()}\n`;
+      case 'ul': return Array.from(node.childNodes)
+        .filter(n => n.nodeType === 1 && n.tagName.toLowerCase() === 'li')
+        .map(li => `- ${Array.from(li.childNodes).map(walk).join('').trim()}`)
+        .join('\n') + '\n';
+      case 'ol': return Array.from(node.childNodes)
+        .filter(n => n.nodeType === 1 && n.tagName.toLowerCase() === 'li')
+        .map((li, i) => `${i + 1}. ${Array.from(li.childNodes).map(walk).join('').trim()}`)
+        .join('\n') + '\n';
+      case 'li': return inner();
+      case 'a': return `[${inner()}](${node.href || ''})`;
+      case 'img': return node.src && !node.src.startsWith('data:') ? `![](${node.src})\n` : '';
+      default: return inner();
+    }
+  }
+  return walk(div).replace(/\n{3,}/g, '\n\n').trim();
+}
+
+async function exportClips() {
+  if (!snippets.length) return;
+  const btn = document.getElementById('export-clips-btn');
+  btn.textContent = '…'; btn.disabled = true;
+  try {
+    if (!window.JSZip) {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
+    const zip = new JSZip();
+    const used = {};
+    snippets.forEach(s => {
+      const base = (s.title.replace(/[^a-z0-9\s]/gi, '').trim().replace(/\s+/g, '-').toLowerCase() || 'clip').slice(0, 60);
+      used[base] = (used[base] || 0) + 1;
+      const filename = used[base] > 1 ? `${base}-${used[base]}.md` : `${base}.md`;
+      const date = new Date(s.created_at).toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'});
+      zip.file(filename, `# ${s.title}\n\n*${date}*\n\n${htmlToMd(s.content)}\n`);
+    });
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `clips-${(memo && memo.memo_id) || memoId}-${new Date().toISOString().slice(0, 10)}.zip`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch(e) { console.error('exportClips:', e); }
+  btn.textContent = '⬇ Export .md';
+  btn.disabled = false;
 }
 
 // ── Global search ─────────────────────────────────────────────────────────────

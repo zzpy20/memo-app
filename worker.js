@@ -27,7 +27,7 @@ function nowISO() { return new Date().toISOString(); }
 
 function sanitizeTags(raw) {
   const arr = Array.isArray(raw) ? raw : [];
-  return JSON.stringify(arr.map(t => String(t).trim()).filter(Boolean));
+  return JSON.stringify(arr.map(t => String(t).trim().toLowerCase()).filter(Boolean));
 }
 
 function sanitizeLinks(raw) {
@@ -119,11 +119,11 @@ export default {
     // ── Tags ──────────────────────────────────────────────────────────────────
     if (path === '/tags' && method === 'GET') {
       const { results } = await env.MEMO_D1.prepare(
-        `SELECT DISTINCT tags FROM memos WHERE tags != '[]'`
+        `SELECT tags FROM memos WHERE tags != '[]' AND (deleted_at IS NULL OR deleted_at='')`
       ).all();
-      const set = new Set();
-      for (const r of results || []) { try { JSON.parse(r.tags).forEach(t => set.add(t)); } catch {} }
-      return json([...set].sort(), 200, h);
+      const counts = {};
+      for (const r of results || []) { try { JSON.parse(r.tags).forEach(t => { counts[t] = (counts[t] || 0) + 1; }); } catch {} }
+      return json(Object.keys(counts).sort().map(t => ({ tag: t, count: counts[t] })), 200, h);
     }
 
     // ── List memos ────────────────────────────────────────────────────────────
@@ -296,7 +296,7 @@ export default {
       if (method === 'PUT') {
         const body = await request.json();
         const result = await env.MEMO_D1.prepare(
-          `UPDATE memos SET title=?,description=?,uid=?,cover_file=?,tags=?,pinned=?,links=?,updated_at=? WHERE id=?`
+          `UPDATE memos SET title=?,description=?,uid=?,cover_file=?,tags=?,pinned=?,links=?,updated_at=?,created_at=COALESCE(?,created_at) WHERE id=?`
         ).bind(
           String(body.title || '').slice(0, 500),
           String(body.description || '').slice(0, 2000),
@@ -305,7 +305,9 @@ export default {
           sanitizeTags(body.tags),
           body.pinned ? 1 : 0,
           sanitizeLinks(body.links),
-          nowISO(), id
+          nowISO(),
+          (() => { if (!body.created_at) return null; const d = new Date(body.created_at + 'T00:00:00+10:00'); return isNaN(d) ? null : d.toISOString(); })(),
+          id
         ).run();
         if (!result.meta?.changes) return json({ error: 'not_found' }, 404, h);
         return json({ ok: true }, 200, h);
@@ -329,6 +331,29 @@ export default {
       const id = dec(m[1]);
       await env.MEMO_D1.prepare("UPDATE memos SET deleted_at=NULL WHERE id=?").bind(id).run();
       return json({ ok: true }, 200, h);
+    }
+
+    // ── Duplicate ─────────────────────────────────────────────────────────────
+    m = path.match(/^\/memos\/([^/]+)\/duplicate$/);
+    if (m && method === 'POST') {
+      const srcId = dec(m[1]);
+      const src = await env.MEMO_D1.prepare(
+        'SELECT * FROM memos WHERE id=? AND (deleted_at IS NULL OR deleted_at=\'\')'
+      ).bind(srcId).first();
+      if (!src) return json({ error: 'not_found' }, 404, h);
+      const newId_ = newId(), newMemoId_ = newMemoId(), ts = nowISO();
+      await env.MEMO_D1.prepare(
+        `INSERT INTO memos(id,memo_id,uid,title,description,cover_file,tags,pinned,links,search_text,created_at,updated_at)
+         VALUES(?,?,?,?,?,?,?,0,?,?,?,?)`
+      ).bind(newId_, newMemoId_, src.uid, src.title + ' (copy)', src.description,
+        src.cover_file, src.tags, src.links, src.search_text, ts, ts).run();
+      const listed = await env.MEMO_R2.list({ prefix: pfx(srcId), limit: 1000 });
+      for (const obj of listed.objects) {
+        const relKey = obj.key.slice(pfx(srcId).length);
+        const body = await env.MEMO_R2.get(obj.key);
+        if (body) await env.MEMO_R2.put(pfx(newId_) + relKey, body.body, { httpMetadata: body.httpMetadata });
+      }
+      return json({ id: newId_, memo_id: newMemoId_ }, 200, h);
     }
 
     // ── Snippets ──────────────────────────────────────────────────────────────

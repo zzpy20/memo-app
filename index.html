@@ -40,11 +40,15 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 #trash-btn:hover{border-color:var(--danger);color:var(--danger)}
 #trash-btn.active{border-color:var(--danger);color:var(--danger);background:#fef2f2}
 #trash-count{background:var(--danger);color:#fff;font-size:.65rem;font-weight:700;border-radius:10px;padding:1px 5px;line-height:1.4;display:none}
+#signout-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:.82rem;cursor:pointer;color:var(--muted);flex-shrink:0;font-family:inherit}
+#signout-btn:hover{border-color:var(--text);color:var(--text)}
 
 #tag-bar{padding:10px 24px;display:flex;gap:8px;flex-wrap:wrap;background:var(--surface);border-bottom:1px solid var(--border)}
-.tag-pill{padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;font-size:.82rem;font-family:inherit;cursor:pointer;color:var(--muted);transition:all .1s}
+.tag-pill{padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;font-size:.82rem;font-family:inherit;cursor:pointer;color:var(--muted);transition:all .1s;display:inline-flex;align-items:center;gap:5px}
 .tag-pill:hover{border-color:var(--accent);color:var(--accent)}
 .tag-pill.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tag-count{font-size:.72rem;background:rgba(0,0,0,.08);border-radius:10px;padding:0 5px;line-height:1.6}
+.tag-pill.active .tag-count{background:rgba(255,255,255,.25)}
 
 main{padding:24px 52px 24px 24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
 
@@ -85,6 +89,36 @@ main{padding:24px 52px 24px 24px;display:grid;grid-template-columns:repeat(auto-
 .card-trash-actions .restore-btn{border-color:var(--accent);color:var(--accent)}
 .card-trash-actions .restore-btn:hover{background:var(--accent);color:#fff}
 .card-trash-actions .perm-btn:hover{border-color:var(--danger);color:var(--danger)}
+
+/* View toggle */
+.view-btns{display:flex;gap:3px;flex-shrink:0}
+.view-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:5px 9px;font-size:.85rem;cursor:pointer;color:var(--muted);line-height:1;font-family:inherit}
+.view-btn:hover{border-color:var(--accent);color:var(--accent)}
+.view-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* List view */
+#grid.view-list{display:block;padding:16px 24px}
+.list-container{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.list-row{display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s}
+.list-row:last-child{border-bottom:none}
+.list-row:hover{background:var(--bg)}
+.lr-cover{width:34px;height:34px;border-radius:6px;flex-shrink:0;background-size:cover;background-position:center}
+.lr-cover.no-cover{background:linear-gradient(135deg,#e0e7ff 0%,#ede9fe 100%)}
+.lr-main{flex:1;min-width:0}
+.lr-title{font-weight:600;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lr-title.untitled{color:var(--muted);font-weight:400;font-style:italic}
+.lr-sub{font-size:.73rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.lr-tags{display:flex;gap:4px;flex-shrink:0;max-width:220px;overflow:hidden}
+.lr-right{flex-shrink:0;text-align:right;min-width:90px}
+.lr-date{font-size:.73rem;color:var(--muted)}
+.lr-uid{font-size:.68rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px}
+.lr-actions{display:flex;gap:2px;flex-shrink:0;opacity:0;transition:opacity .1s}
+.list-row:hover .lr-actions{opacity:1}
+.lr-trash-actions{display:flex;gap:6px;flex-shrink:0}
+.lr-trash-actions button{padding:4px 10px;border-radius:6px;font-size:.75rem;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:transparent;color:var(--muted);white-space:nowrap}
+.lr-trash-actions .restore-btn{border-color:var(--accent);color:var(--accent)}
+.lr-trash-actions .restore-btn:hover{background:var(--accent);color:#fff}
+.lr-trash-actions .perm-btn:hover{border-color:var(--danger);color:var(--danger)}
 </style>
 </head>
 <body>
@@ -105,8 +139,13 @@ main{padding:24px 52px 24px 24px;display:grid;grid-template-columns:repeat(auto-
     <input type="search" id="search-input" placeholder="Search memos…" oninput="onSearch(this.value)">
   </div>
   <button id="rebuild-btn" title="Rebuild search index — run this after deploying a worker update, or if search results seem stale. Takes a few seconds." onclick="rebuildIndex()">⟳ Reindex</button>
+  <div class="view-btns">
+    <button class="view-btn" id="view-grid-btn" title="Grid view" onclick="setViewMode('grid')">⊞</button>
+    <button class="view-btn" id="view-list-btn" title="List view" onclick="setViewMode('list')">☰</button>
+  </div>
   <button id="trash-btn" title="Trash" onclick="toggleTrash()">🗑 <span id="trash-count"></span></button>
   <button id="new-btn" onclick="newMemo()">+ New Memo</button>
+  <button id="signout-btn" onclick="logout()">Sign out</button>
 </header>
 
 <div id="trash-bar">
@@ -135,7 +174,7 @@ main{padding:24px 52px 24px 24px;display:grid;grid-template-columns:repeat(auto-
 <script>
 const WORKER = 'https://memo-worker.ausz.workers.dev';
 let token = localStorage.getItem('memo_token') || '';
-let allMemos = [], currentTag = '', searchTimer;
+let allMemos = [], currentTag = '', searchTimer, viewMode = localStorage.getItem('memo_view') || 'grid';
 
 function api(path, opts = {}) {
   const sep = path.includes('?') ? '&' : '?';
@@ -168,11 +207,23 @@ async function doAuth() {
 
 document.getElementById('auth-input').addEventListener('keydown', e => { if (e.key === 'Enter') doAuth(); });
 
+function setViewMode(mode) {
+  viewMode = mode;
+  localStorage.setItem('memo_view', mode);
+  document.getElementById('grid').classList.toggle('view-list', mode === 'list');
+  document.getElementById('view-grid-btn').classList.toggle('active', mode === 'grid');
+  document.getElementById('view-list-btn').classList.toggle('active', mode === 'list');
+  if (mode === 'list') document.getElementById('timeline').style.display = 'none';
+  renderMemos(allMemos);
+  if (mode === 'grid' && allMemos.length) buildTimeline();
+}
+
 async function init() {
   if (!token) return;
   const r = await fetch(WORKER + '?check=1&t=' + encodeURIComponent(token)).catch(() => null);
   if (!r || !r.ok) { document.getElementById('auth-overlay').classList.remove('hidden'); return; }
   document.getElementById('auth-overlay').classList.add('hidden');
+  setViewMode(viewMode);
   loadTags();
   loadMemos();
   updateTrashCount();
@@ -182,11 +233,13 @@ async function loadTags() {
   try {
     const tags = await (await api('/tags')).json();
     const bar = document.getElementById('tag-bar');
-    bar.innerHTML = '<button class="tag-pill active" data-tag="" onclick="filterTag(this,\'\')">All</button>';
-    tags.forEach(t => {
+    const total = tags.reduce((s, t) => s + t.count, 0);
+    bar.innerHTML = `<button class="tag-pill active" data-tag="" onclick="filterTag(this,'')">All <span class="tag-count">${total}</span></button>`;
+    tags.forEach(({ tag, count }) => {
       const b = document.createElement('button');
-      b.className = 'tag-pill'; b.dataset.tag = t; b.textContent = t;
-      b.onclick = () => filterTag(b, t);
+      b.className = 'tag-pill'; b.dataset.tag = tag;
+      b.innerHTML = `${esc(tag)} <span class="tag-count">${count}</span>`;
+      b.onclick = () => filterTag(b, tag);
       bar.appendChild(b);
     });
   } catch {}
@@ -198,7 +251,7 @@ async function loadMemos(tag) {
     const path = tag ? '/memos?tag=' + encodeURIComponent(tag) : '/memos';
     allMemos = await (await api(path)).json();
     renderMemos(allMemos);
-    buildTimeline();
+    if (viewMode === 'grid') buildTimeline();
   } catch {}
 }
 
@@ -208,8 +261,48 @@ function fileUrl(memoId, key) {
 
 function renderMemos(memos, trashMode = false) {
   const grid = document.getElementById('grid');
-  grid.querySelectorAll('.memo-card').forEach(c => c.remove());
+  grid.querySelectorAll('.memo-card, .list-container').forEach(c => c.remove());
   document.getElementById('empty').style.display = memos.length ? 'none' : 'block';
+
+  if (viewMode === 'list') {
+    if (!memos.length) return;
+    const container = document.createElement('div');
+    container.className = 'list-container';
+    memos.forEach(m => {
+      const tags = safeJson(m.tags, []);
+      const cover = m.cover_file ? fileUrl(m.id, m.cover_file) : '';
+      const row = document.createElement('div');
+      row.className = 'list-row';
+      row.dataset.date = m.created_at;
+      if (!trashMode) row.onclick = () => location.href = 'memo/?id=' + m.id;
+      const sub = [m.memo_id, m.description].filter(Boolean).join(' · ');
+      row.innerHTML = `
+        <div class="lr-cover ${cover ? '' : 'no-cover'}" ${cover ? `style="background-image:url('${esc(cover)}')"` : ''}></div>
+        <div class="lr-main">
+          <div class="lr-title ${m.title ? '' : 'untitled'}">${esc(m.title || 'Untitled')}</div>
+          <div class="lr-sub">${esc(sub)}</div>
+        </div>
+        <div class="lr-tags">${tags.map(t=>`<span class="card-tag">${esc(t)}</span>`).join('')}</div>
+        <div class="lr-right">
+          <div class="lr-date">${fmtDate(m.created_at)}</div>
+          ${m.uid ? `<div class="lr-uid">${esc(m.uid)}</div>` : ''}
+        </div>
+        ${trashMode ? `
+        <div class="lr-trash-actions">
+          <button class="restore-btn" onclick="restoreMemo(event,'${m.id}')">↩ Restore</button>
+          <button class="perm-btn" onclick="permanentDelete(event,'${m.id}')">✕ Delete</button>
+        </div>` : `
+        <div class="lr-actions">
+          <button class="btn-icon ${m.pinned?'pinned':''}" title="${m.pinned?'Unpin':'Pin'}" onclick="togglePin(event,'${m.id}',${m.pinned})">📌</button>
+          <button class="btn-icon" title="Duplicate" onclick="duplicateMemo(event,'${m.id}')">⧉</button>
+          <button class="btn-icon" title="Move to trash" onclick="deleteMemo(event,'${m.id}')">🗑</button>
+        </div>`}`;
+      container.appendChild(row);
+    });
+    grid.appendChild(container);
+    return;
+  }
+
   memos.forEach(m => {
     const tags = safeJson(m.tags, []);
     const cover = m.cover_file ? fileUrl(m.id, m.cover_file) : '';
@@ -233,6 +326,7 @@ function renderMemos(memos, trashMode = false) {
           <span class="card-date">${fmtDate(m.created_at)}</span>
           ${m.uid ? `<span class="card-uid" title="${esc(m.uid)}">${esc(m.uid)}</span>` : ''}
           <button class="btn-icon ${m.pinned?'pinned':''}" title="${m.pinned?'Unpin':'Pin'}" onclick="togglePin(event,'${m.id}',${m.pinned})">📌</button>
+          <button class="btn-icon" title="Duplicate memo" onclick="duplicateMemo(event,'${m.id}')">⧉</button>
           <button class="btn-icon" title="Move to trash" onclick="deleteMemo(event,'${m.id}')">🗑</button>
         </div>`}
       </div>`;
@@ -252,7 +346,7 @@ function onSearch(q) {
   q = q.trim();
   if (!q) { renderMemos(allMemos); return; }
   searchTimer = setTimeout(async () => {
-    try { renderMemos(await (await api('/search?q=' + encodeURIComponent(q))).json()); document.getElementById('timeline').style.display = 'none'; } catch {}
+    try { renderMemos(await (await api('/search?q=' + encodeURIComponent(q))).json()); if (viewMode === 'grid') document.getElementById('timeline').style.display = 'none'; } catch {}
   }, 300);
 }
 
@@ -381,6 +475,19 @@ async function deleteMemo(e, id) {
   try { await api('/memos/' + id, { method:'DELETE' }); loadMemos(); updateTrashCount(); } catch {}
 }
 
+async function duplicateMemo(e, id) {
+  e.stopPropagation();
+  const btn = e.currentTarget;
+  btn.textContent = '…'; btn.disabled = true;
+  try {
+    const r = await (await api('/memos/' + id + '/duplicate', { method: 'POST' })).json();
+    await loadMemos();
+    location.href = 'memo/?id=' + r.id;
+  } catch {
+    btn.textContent = '⧉'; btn.disabled = false;
+  }
+}
+
 async function updateTrashCount() {
   try {
     const memos = await (await api('/memos?trash=1')).json();
@@ -397,7 +504,7 @@ function toggleTrash() {
   document.getElementById('tag-bar').style.display = inTrash ? 'none' : '';
   document.getElementById('new-btn').style.display = inTrash ? 'none' : '';
   document.getElementById('search-input').value = '';
-  if (inTrash) loadTrash(); else loadMemos();
+  if (inTrash) { document.getElementById('timeline').style.display = 'none'; loadTrash(); } else loadMemos();
 }
 
 async function loadTrash() {
