@@ -63,12 +63,16 @@ async function syncSearchText(env, id, noteHtml, meta) {
       meta = { files: {} };
       if (o) { try { meta = JSON.parse(await o.text()); } catch {} }
     }
+    const snippetsObj = await env.MEMO_R2.get(pfx(id) + '_snippets');
+    let snippets = [];
+    if (snippetsObj) { try { snippets = JSON.parse(await snippetsObj.text()); } catch {} }
     const files = meta?.files || {};
     const parts = [
       stripHtml(noteHtml),
       Object.keys(files).join(' '),
       Object.values(files).flatMap(f => f.tags || []).join(' '),
       Object.values(files).map(f => f.caption || '').filter(Boolean).join(' '),
+      snippets.map(s => s.title + ' ' + stripHtml(s.content || '')).join(' '),
     ];
     const searchText = parts.filter(Boolean).join(' ').slice(0, 50000);
     await env.MEMO_D1.prepare('UPDATE memos SET search_text=? WHERE id=?').bind(searchText, id).run();
@@ -301,6 +305,22 @@ export default {
         const listed = await env.MEMO_R2.list({ prefix: p, limit: 1000 });
         for (const obj of listed.objects) await env.MEMO_R2.delete(obj.key);
         await env.MEMO_D1.prepare('DELETE FROM memos WHERE id=?').bind(id).run();
+        return json({ ok: true }, 200, h);
+      }
+    }
+
+    // ── Snippets ──────────────────────────────────────────────────────────────
+    m = path.match(/^\/memos\/([^/]+)\/snippets$/);
+    if (m) {
+      const id = dec(m[1]);
+      if (method === 'GET') {
+        const obj = await env.MEMO_R2.get(pfx(id) + '_snippets');
+        if (!obj) return json([], 200, h);
+        try { return json(JSON.parse(await obj.text()), 200, h); }
+        catch { return json([], 200, h); }
+      }
+      if (method === 'PUT') {
+        await env.MEMO_R2.put(pfx(id) + '_snippets', JSON.stringify(await request.json()), { httpMetadata: { contentType: 'application/json' } });
         return json({ ok: true }, 200, h);
       }
     }

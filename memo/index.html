@@ -87,6 +87,34 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #note-status{font-size:.78rem;color:var(--muted)}
 #save-note-btn{padding:7px 16px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:.85rem;cursor:pointer;font-family:inherit;font-weight:500}
 
+.clip-panel{margin-top:14px;border:1.5px solid var(--accent);border-radius:10px;overflow:hidden}
+.clip-panel-head{padding:8px 14px;font-size:.78rem;font-weight:600;color:var(--accent);background:#ede9fe;letter-spacing:.04em}
+#clip-title-input{width:100%;border:none;border-bottom:1px solid var(--border);padding:10px 14px;font-size:.9rem;font-family:inherit;background:var(--surface);outline:none;color:var(--text)}
+#clip-title-input::placeholder{color:var(--muted)}
+#clip-paste-area{min-height:100px;max-height:260px;overflow-y:auto;padding:12px 14px;font-size:.85rem;line-height:1.6;outline:none;background:var(--surface);color:var(--text)}
+#clip-paste-area:empty::before{content:'Paste your content here…';color:var(--muted);pointer-events:none}
+.clip-foot{display:flex;justify-content:flex-end;gap:8px;padding:8px 14px;border-top:1px solid var(--border);background:var(--surface)}
+.clip-foot button{padding:6px 14px;border-radius:7px;font-size:.85rem;cursor:pointer;font-family:inherit;border:1px solid var(--border)}
+.clip-foot .clip-save{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:500}
+.clip-foot .clip-cancel{background:transparent;color:var(--muted)}
+
+.snippets-area{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.snippet-card{border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.snippet-hdr{display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;background:var(--surface);user-select:none}
+.snippet-hdr:hover{background:var(--bg)}
+.snippet-icon{font-size:1rem;flex-shrink:0}
+.snippet-name{font-size:.88rem;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.snippet-ts{font-size:.72rem;color:var(--muted);flex-shrink:0;font-family:'DM Mono',monospace}
+.snippet-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:.8rem;padding:2px 6px;border-radius:4px;flex-shrink:0;line-height:1}
+.snippet-del:hover{background:var(--danger-light);color:var(--danger)}
+.snippet-chev{font-size:.75rem;color:var(--muted);flex-shrink:0;transition:transform .15s}
+.snippet-chev.open{transform:rotate(90deg)}
+.snippet-body{border-top:1px solid var(--border);background:#fafaf9}
+.snippet-content{padding:14px;max-height:320px;overflow-y:auto;font-size:.85rem;line-height:1.6;word-break:break-word}
+.snippet-foot{display:flex;justify-content:flex-end;padding:6px 14px;border-top:1px solid var(--border)}
+.snippet-foot button{padding:4px 12px;border:1px solid var(--border);border-radius:6px;font-size:.78rem;cursor:pointer;background:transparent;font-family:inherit;color:var(--muted)}
+.snippet-foot button:hover{border-color:var(--accent);color:var(--accent)}
+
 .field-group{margin-bottom:14px}
 .field-label{font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;display:block}
 .field-input{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.88rem;font-family:inherit;color:var(--text)}
@@ -339,12 +367,26 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <button onclick="exec('insertOrderedList')">1. List</button>
       <div class="tb-sep"></div>
       <button onclick="clearNote()">Clear</button>
+      <div class="tb-sep"></div>
+      <button onclick="showClipPanel()" title="Capture a clip — paste a large block of text or code into a titled, collapsible card below">📋 Clip</button>
     </div>
     <div id="note-editor" contenteditable="true" spellcheck="true"></div>
     <div class="note-footer">
       <span id="note-status">No note yet</span>
       <button id="save-note-btn" onclick="saveNote()">Save note</button>
     </div>
+
+    <div class="clip-panel" id="clip-panel" style="display:none">
+      <div class="clip-panel-head">📋 New clip — paste content, give it a title, then save</div>
+      <input type="text" id="clip-title-input" placeholder="Title for this clip…" maxlength="120">
+      <div id="clip-paste-area" contenteditable="true" spellcheck="false"></div>
+      <div class="clip-foot">
+        <button class="clip-cancel" onclick="cancelClip()">Cancel</button>
+        <button class="clip-save" onclick="saveClip()">Save clip</button>
+      </div>
+    </div>
+
+    <div class="snippets-area" id="snippets-area"></div>
   </div>
 </details>
 
@@ -557,6 +599,7 @@ async function init() {
   await Promise.all([loadMemo(), loadMeta()]);
   await loadFiles();
   loadNote();
+  loadSnippets();
 }
 
 async function loadMemo() {
@@ -1447,6 +1490,95 @@ document.addEventListener('mouseout', e => {
 document.addEventListener('mousemove', e => {
   if (hoverBox.style.display !== 'none') positionHover(e);
 });
+
+// ── Clips / Snippets ──────────────────────────────────────────────────────────
+let snippets = [];
+
+async function loadSnippets() {
+  try { snippets = await (await api('/memos/' + memoId + '/snippets')).json(); }
+  catch { snippets = []; }
+  renderSnippets();
+}
+
+async function saveSnippets() {
+  try {
+    await api('/memos/' + memoId + '/snippets', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(snippets),
+    });
+  } catch {}
+}
+
+function showClipPanel() {
+  const panel = document.getElementById('clip-panel');
+  panel.style.display = '';
+  document.getElementById('clip-title-input').value = '';
+  document.getElementById('clip-paste-area').innerHTML = '';
+  document.getElementById('clip-title-input').focus();
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function cancelClip() {
+  document.getElementById('clip-panel').style.display = 'none';
+}
+
+async function saveClip() {
+  const title = document.getElementById('clip-title-input').value.trim() || 'Untitled clip';
+  const content = document.getElementById('clip-paste-area').innerHTML;
+  if (!document.getElementById('clip-paste-area').innerText.trim()) {
+    document.getElementById('clip-paste-area').focus();
+    return;
+  }
+  snippets.push({ id: crypto.randomUUID(), title, content, created_at: new Date().toISOString() });
+  await saveSnippets();
+  renderSnippets();
+  cancelClip();
+}
+
+function renderSnippets() {
+  const area = document.getElementById('snippets-area');
+  if (!snippets.length) { area.innerHTML = ''; return; }
+  area.innerHTML = snippets.map((s, i) => `
+    <div class="snippet-card">
+      <div class="snippet-hdr" onclick="toggleSnippet(${i})">
+        <span class="snippet-icon">📋</span>
+        <span class="snippet-name">${esc(s.title)}</span>
+        <span class="snippet-ts">${new Date(s.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>
+        <button class="snippet-del" onclick="deleteSnippet(${i},event)" title="Delete clip">✕</button>
+        <span class="snippet-chev" id="chev-${i}">▸</span>
+      </div>
+      <div class="snippet-body" id="sb-${i}" style="display:none">
+        <div class="snippet-content">${s.content}</div>
+        <div class="snippet-foot">
+          <button onclick="copyClipText(${i})">Copy text</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleSnippet(i) {
+  const body = document.getElementById('sb-' + i);
+  const chev = document.getElementById('chev-' + i);
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : '';
+  chev.classList.toggle('open', !open);
+}
+
+async function deleteSnippet(i, e) {
+  e.stopPropagation();
+  if (!confirm('Delete this clip?')) return;
+  snippets.splice(i, 1);
+  await saveSnippets();
+  renderSnippets();
+}
+
+async function copyClipText(i) {
+  const s = snippets[i];
+  if (!s) return;
+  const text = new DOMParser().parseFromString(s.content, 'text/html').body.innerText;
+  try { await navigator.clipboard.writeText(text); } catch {}
+}
 
 // ── Global search ─────────────────────────────────────────────────────────────
 let _gs_timer = null, _gs_results = [], _gs_idx = -1;
