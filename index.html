@@ -103,6 +103,7 @@ main{padding:24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280
 
 <div id="trash-bar">
   <span id="trash-bar-label">Trashed memos</span>
+  <button onclick="restoreAll()">↩ Restore all</button>
   <button onclick="emptyTrash()" class="empty-btn">Empty trash</button>
   <button onclick="toggleTrash()">← Back</button>
 </div>
@@ -300,6 +301,14 @@ async function permanentDelete(e, id) {
   e.stopPropagation();
   if (!confirm('Permanently delete this memo and all its files? This cannot be undone.')) return;
   try { await api('/memos/' + id + '?permanent=1', { method:'DELETE' }); loadTrash(); updateTrashCount(); } catch {}
+}
+
+async function restoreAll() {
+  try {
+    const memos = await (await api('/memos?trash=1')).json();
+    await Promise.all(memos.map(m => api('/memos/' + m.id + '/untrash', { method:'POST' })));
+    loadTrash(); updateTrashCount();
+  } catch {}
 }
 
 async function emptyTrash() {
