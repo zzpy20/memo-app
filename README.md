@@ -1,6 +1,6 @@
 # Memo App
 
-A personal memo and note-taking app with file attachments, rich text, and full-text search. Built on Cloudflare Workers, D1 (SQLite), and R2 (object storage). Frontend is static HTML served by Caddy.
+A personal memo and note-taking app with file attachments, rich text, and full-text search. Built entirely on Cloudflare — Workers, D1 (SQLite), R2 (object storage), and Pages.
 
 Live at: `https://memo.1000600.xyz`
 
@@ -10,11 +10,10 @@ Live at: `https://memo.1000600.xyz`
 
 | Layer | Technology |
 |---|---|
-| Frontend | Static HTML/CSS/JS (no framework) |
+| Frontend | Static HTML/CSS/JS (no framework), hosted on Cloudflare Pages |
 | Backend | Cloudflare Worker (`worker.js`) |
 | Database | Cloudflare D1 (SQLite + FTS5) |
 | File storage | Cloudflare R2 |
-| Web server | Caddy (Mac mini, serves static files) |
 
 The frontend talks directly to the Worker API. All auth, file ops, and search go through the Worker.
 
@@ -79,6 +78,19 @@ FTS5 full-text search across: `memo_id`, `uid`, `title`, `description`, `tags`, 
 
 ## Deployment
 
+### Frontend (Cloudflare Pages)
+
+Push to `main` — GitHub Actions automatically deploys to Cloudflare Pages.
+
+The workflow (`.github/workflows/deploy-pages.yml`) triggers on changes to `index.html`, `favicon.svg`, or `memo/**`, copies only those files to a `dist/` directory, and deploys via `wrangler pages deploy`.
+
+Required GitHub secrets:
+
+| Secret | Value |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | API token with Cloudflare Pages edit permission |
+| `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID |
+
 ### Worker
 
 ```sh
@@ -86,16 +98,6 @@ sh deploy.sh
 ```
 
 > Deploys from a temp directory to prevent wrangler detecting `index.html` and switching to static-assets mode (which disables D1/R2 bindings).
-
-### Frontend (Mac mini)
-
-```sh
-sudo cp index.html /opt/homebrew/var/www/memo/index.html
-sudo cp memo/index.html /opt/homebrew/var/www/memo/memo/index.html
-sudo cp favicon.svg /opt/homebrew/var/www/memo/favicon.svg
-```
-
-After any frontend change, do a **hard refresh** in the browser (Cmd+Shift+R) — Caddy caches aggressively.
 
 ### Database schema
 
@@ -126,7 +128,6 @@ The token is appended as `?t={token}` on every API request and stored in `localS
 | Resource | Name | ID |
 |---|---|---|
 | Worker | `memo-worker` | — |
+| Pages project | `memo-frontend` | — |
 | D1 database | `memo-db` | `2554e206-c3d9-45a9-a5b6-96e06e428e1d` |
 | R2 bucket | `memo-files` | — |
-
-> GitHub integration is **disconnected** from the Cloudflare dashboard to prevent auto-deploys overwriting the worker.
