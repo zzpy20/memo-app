@@ -36,9 +36,10 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 #new-btn:hover{background:var(--accent-hover)}
 #rebuild-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:.82rem;cursor:pointer;color:var(--muted);flex-shrink:0;line-height:1;font-family:inherit}
 #rebuild-btn:hover{border-color:var(--accent);color:var(--accent)}
-#trash-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.9rem;cursor:pointer;color:var(--muted);flex-shrink:0;line-height:1}
+#trash-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.9rem;cursor:pointer;color:var(--muted);flex-shrink:0;line-height:1;position:relative;display:inline-flex;align-items:center;gap:5px}
 #trash-btn:hover{border-color:var(--danger);color:var(--danger)}
 #trash-btn.active{border-color:var(--danger);color:var(--danger);background:#fef2f2}
+#trash-count{background:var(--danger);color:#fff;font-size:.65rem;font-weight:700;border-radius:10px;padding:1px 5px;line-height:1.4;display:none}
 
 #tag-bar{padding:10px 24px;display:flex;gap:8px;flex-wrap:wrap;background:var(--surface);border-bottom:1px solid var(--border)}
 .tag-pill{padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;font-size:.82rem;font-family:inherit;cursor:pointer;color:var(--muted);transition:all .1s}
@@ -96,7 +97,7 @@ main{padding:24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280
     <input type="search" id="search-input" placeholder="Search memos…" oninput="onSearch(this.value)">
   </div>
   <button id="rebuild-btn" title="Rebuild search index — run this after deploying a worker update, or if search results seem stale. Takes a few seconds." onclick="rebuildIndex()">⟳ Reindex</button>
-  <button id="trash-btn" title="Trash" onclick="toggleTrash()">🗑</button>
+  <button id="trash-btn" title="Trash" onclick="toggleTrash()">🗑 <span id="trash-count"></span></button>
   <button id="new-btn" onclick="newMemo()">+ New Memo</button>
 </header>
 
@@ -157,6 +158,7 @@ async function init() {
   document.getElementById('auth-overlay').classList.add('hidden');
   loadTags();
   loadMemos();
+  updateTrashCount();
 }
 
 async function loadTags() {
@@ -258,7 +260,16 @@ let inTrash = false;
 
 async function deleteMemo(e, id) {
   e.stopPropagation();
-  try { await api('/memos/' + id, { method:'DELETE' }); loadMemos(); } catch {}
+  try { await api('/memos/' + id, { method:'DELETE' }); loadMemos(); updateTrashCount(); } catch {}
+}
+
+async function updateTrashCount() {
+  try {
+    const memos = await (await api('/memos?trash=1')).json();
+    const badge = document.getElementById('trash-count');
+    if (memos.length) { badge.textContent = memos.length; badge.style.display = ''; }
+    else { badge.style.display = 'none'; }
+  } catch {}
 }
 
 function toggleTrash() {
@@ -282,13 +293,13 @@ async function loadTrash() {
 
 async function restoreMemo(e, id) {
   e.stopPropagation();
-  try { await api('/memos/' + id + '/restore', { method:'POST' }); loadTrash(); } catch {}
+  try { await api('/memos/' + id + '/untrash', { method:'POST' }); loadTrash(); updateTrashCount(); } catch {}
 }
 
 async function permanentDelete(e, id) {
   e.stopPropagation();
   if (!confirm('Permanently delete this memo and all its files? This cannot be undone.')) return;
-  try { await api('/memos/' + id + '?permanent=1', { method:'DELETE' }); loadTrash(); } catch {}
+  try { await api('/memos/' + id + '?permanent=1', { method:'DELETE' }); loadTrash(); updateTrashCount(); } catch {}
 }
 
 async function emptyTrash() {
@@ -296,8 +307,7 @@ async function emptyTrash() {
   try {
     const memos = await (await api('/memos?trash=1')).json();
     await Promise.all(memos.map(m => api('/memos/' + m.id + '?permanent=1', { method:'DELETE' })));
-    loadTrash();
-    loadTags();
+    loadTrash(); updateTrashCount(); loadTags();
   } catch {}
 }
 

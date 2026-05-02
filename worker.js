@@ -324,7 +324,7 @@ export default {
     }
 
     // ── Restore trashed memo ──────────────────────────────────────────────────
-    m = path.match(/^\/memos\/([^/]+)\/restore$/);
+    m = path.match(/^\/memos\/([^/]+)\/untrash$/);
     if (m && method === 'POST') {
       const id = dec(m[1]);
       await env.MEMO_D1.prepare("UPDATE memos SET deleted_at=NULL WHERE id=?").bind(id).run();
