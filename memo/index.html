@@ -30,6 +30,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .back-link:hover{background:var(--bg);color:var(--text)}
 .memo-id-badge{font-family:'DM Mono',monospace;font-size:.75rem;color:var(--accent);font-weight:500;background:#ede9fe;padding:3px 10px;border-radius:20px;flex-shrink:0;white-space:nowrap}
 .header-spacer{flex:1}
+
+.gsearch-wrap{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 16px;position:sticky;top:52px;z-index:99}
+#gsearch{width:100%;padding:7px 14px;border:1px solid var(--border);border-radius:8px;font-size:.9rem;font-family:inherit;background:var(--bg);color:var(--text);outline:none}
+#gsearch:focus{border-color:var(--accent)}
+.gsearch-drop{position:absolute;left:16px;right:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200;max-height:340px;overflow-y:auto;display:none}
+.gsearch-drop.open{display:block}
+.gsr-item{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border)}
+.gsr-item:last-child{border-bottom:none}
+.gsr-item:hover,.gsr-item.hi{background:var(--bg)}
+.gsr-title{font-size:.9rem;font-weight:600;color:var(--text)}
+.gsr-meta{font-size:.75rem;color:var(--accent);font-family:'DM Mono',monospace;margin-top:2px}
+.gsr-desc{font-size:.8rem;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .btn-icon{background:none;border:none;cursor:pointer;padding:5px 7px;border-radius:7px;font-size:.95rem;opacity:.45;line-height:1;transition:opacity .1s;flex-shrink:0}
 .btn-icon:hover{opacity:1;background:var(--bg)}
 .btn-icon.active{opacity:1}
@@ -276,6 +288,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="header-spacer"></div>
   <button class="btn-icon" id="pin-btn" title="Pin" onclick="togglePin()">📌</button>
   <button class="btn-icon" title="Print label" onclick="printLabel()">🏷</button>
+</div>
+
+<div class="gsearch-wrap">
+  <input type="search" id="gsearch" placeholder="Search all memos…" autocomplete="off" spellcheck="false">
+  <div class="gsearch-drop" id="gsearch-drop"></div>
 </div>
 
 <div class="title-section">
@@ -1430,6 +1447,56 @@ document.addEventListener('mouseout', e => {
 document.addEventListener('mousemove', e => {
   if (hoverBox.style.display !== 'none') positionHover(e);
 });
+
+// ── Global search ─────────────────────────────────────────────────────────────
+let _gs_timer = null, _gs_results = [], _gs_idx = -1;
+const gsInput = document.getElementById('gsearch');
+const gsDrop  = document.getElementById('gsearch-drop');
+
+gsInput.addEventListener('input', () => {
+  clearTimeout(_gs_timer);
+  const q = gsInput.value.trim();
+  if (!q) { gsDrop.classList.remove('open'); _gs_idx = -1; return; }
+  _gs_timer = setTimeout(() => doGSearch(q), 300);
+});
+
+gsInput.addEventListener('keydown', e => {
+  if (!gsDrop.classList.contains('open')) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); gsSetIdx(_gs_idx + 1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); gsSetIdx(_gs_idx - 1); }
+  else if (e.key === 'Enter' && _gs_idx >= 0) { e.preventDefault(); gsGo(_gs_results[_gs_idx]); }
+  else if (e.key === 'Escape') { gsDrop.classList.remove('open'); gsInput.blur(); }
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.gsearch-wrap')) { gsDrop.classList.remove('open'); _gs_idx = -1; }
+});
+
+async function doGSearch(q) {
+  try { _gs_results = await (await api('/search?q=' + encodeURIComponent(q))).json(); }
+  catch { _gs_results = []; }
+  _gs_idx = -1;
+  if (!_gs_results.length) {
+    gsDrop.innerHTML = '<div class="gsr-item" style="color:var(--muted);cursor:default">No results</div>';
+  } else {
+    gsDrop.innerHTML = _gs_results.slice(0, 8).map((r, i) => `
+      <div class="gsr-item" onclick="gsGo(_gs_results[${i}])">
+        <div class="gsr-title">${esc(r.title || 'Untitled')}</div>
+        <div class="gsr-meta">${esc(r.memo_id)}${r.uid ? ' · ' + esc(r.uid) : ''}</div>
+        ${r.description ? `<div class="gsr-desc">${esc(r.description)}</div>` : ''}
+      </div>`).join('');
+  }
+  gsDrop.classList.add('open');
+}
+
+function gsSetIdx(i) {
+  const items = gsDrop.querySelectorAll('.gsr-item');
+  _gs_idx = Math.max(-1, Math.min(i, items.length - 1));
+  items.forEach((el, j) => el.classList.toggle('hi', j === _gs_idx));
+  if (_gs_idx >= 0) items[_gs_idx].scrollIntoView({ block: 'nearest' });
+}
+
+function gsGo(r) { window.location.href = '/memo/?id=' + encodeURIComponent(r.id); }
 
 init();
 </script>

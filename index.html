@@ -27,13 +27,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .auth-box button:hover{background:var(--accent-hover)}
 #auth-error{color:var(--danger);font-size:.85rem;margin-top:8px;min-height:20px}
 
-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:60px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:100}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:60px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
 .logo{font-size:1.2rem;font-weight:600;flex-shrink:0}
-.search-wrap{flex:1;max-width:420px}
-.search-wrap input{width:100%;padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-size:.9rem;font-family:inherit;background:var(--bg)}
+.search-wrap{flex:1}
+.search-wrap input{width:100%;padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-size:.9rem;font-family:inherit;background:var(--bg);color:var(--text)}
 .search-wrap input:focus{outline:none;border-color:var(--accent)}
-#new-btn{margin-left:auto;padding:8px 18px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.9rem;font-family:inherit;cursor:pointer;font-weight:500;white-space:nowrap}
+#new-btn{padding:8px 18px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.9rem;font-family:inherit;cursor:pointer;font-weight:500;white-space:nowrap;flex-shrink:0}
 #new-btn:hover{background:var(--accent-hover)}
+#rebuild-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:.85rem;cursor:pointer;color:var(--muted);flex-shrink:0;line-height:1}
+#rebuild-btn:hover{border-color:var(--accent);color:var(--accent)}
 
 #tag-bar{padding:10px 24px;display:flex;gap:8px;flex-wrap:wrap;background:var(--surface);border-bottom:1px solid var(--border)}
 .tag-pill{padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;font-size:.82rem;font-family:inherit;cursor:pointer;color:var(--muted);transition:all .1s}
@@ -81,6 +83,7 @@ main{padding:24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280
   <div class="search-wrap">
     <input type="search" id="search-input" placeholder="Search memos…" oninput="onSearch(this.value)">
   </div>
+  <button id="rebuild-btn" title="Rebuild search index (run once after update)" onclick="rebuildIndex()">⟳</button>
   <button id="new-btn" onclick="newMemo()">+ New Memo</button>
 </header>
 
@@ -231,6 +234,21 @@ async function deleteMemo(e, id) {
   e.stopPropagation();
   if (!confirm('Delete this memo and all its files? This cannot be undone.')) return;
   try { await api('/memos/' + id, { method:'DELETE' }); loadMemos(); loadTags(); } catch {}
+}
+
+async function rebuildIndex() {
+  const btn = document.getElementById('rebuild-btn');
+  btn.textContent = '…'; btn.disabled = true;
+  try {
+    const r = await api('/search/rebuild', { method: 'POST' });
+    const d = await r.json();
+    btn.textContent = '✓';
+    setTimeout(() => { btn.textContent = '⟳'; btn.disabled = false; }, 2000);
+    console.log('Search index rebuilt:', d.count, 'memos');
+  } catch {
+    btn.textContent = '⟳'; btn.disabled = false;
+    alert('Rebuild failed — check console.');
+  }
 }
 
 function safeJson(s, fallback) { try { return typeof s === 'string' ? JSON.parse(s) : (s || fallback); } catch { return fallback; } }

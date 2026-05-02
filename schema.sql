@@ -14,28 +14,29 @@ CREATE TABLE memos (
   tags        TEXT NOT NULL DEFAULT '[]',
   pinned      INTEGER NOT NULL DEFAULT 0,
   links       TEXT NOT NULL DEFAULT '[]',
+  search_text TEXT NOT NULL DEFAULT '',
   created_at  TEXT NOT NULL,
   updated_at  TEXT NOT NULL
 );
 
 CREATE VIRTUAL TABLE memos_fts USING fts5(
-  id UNINDEXED, memo_id, uid, title, description, tags,
+  id UNINDEXED, memo_id, uid, title, description, tags, search_text,
   content='memos', content_rowid='rowid'
 );
 
 CREATE TRIGGER memos_ai AFTER INSERT ON memos BEGIN
-  INSERT INTO memos_fts(rowid,id,memo_id,uid,title,description,tags)
-  VALUES(new.rowid,new.id,new.memo_id,new.uid,new.title,new.description,new.tags);
+  INSERT INTO memos_fts(rowid,id,memo_id,uid,title,description,tags,search_text)
+  VALUES(new.rowid,new.id,new.memo_id,new.uid,new.title,new.description,new.tags,new.search_text);
 END;
 
 CREATE TRIGGER memos_ad AFTER DELETE ON memos BEGIN
-  INSERT INTO memos_fts(memos_fts,rowid,id,memo_id,uid,title,description,tags)
-  VALUES('delete',old.rowid,old.id,old.memo_id,old.uid,old.title,old.description,old.tags);
+  INSERT INTO memos_fts(memos_fts,rowid,id,memo_id,uid,title,description,tags,search_text)
+  VALUES('delete',old.rowid,old.id,old.memo_id,old.uid,old.title,old.description,old.tags,old.search_text);
 END;
 
 CREATE TRIGGER memos_au AFTER UPDATE ON memos BEGIN
-  INSERT INTO memos_fts(memos_fts,rowid,id,memo_id,uid,title,description,tags)
-  VALUES('delete',old.rowid,old.id,old.memo_id,old.uid,old.title,old.description,old.tags);
-  INSERT INTO memos_fts(rowid,id,memo_id,uid,title,description,tags)
-  VALUES(new.rowid,new.id,new.memo_id,new.uid,new.title,new.description,new.tags);
+  INSERT INTO memos_fts(memos_fts,rowid,id,memo_id,uid,title,description,tags,search_text)
+  VALUES('delete',old.rowid,old.id,old.memo_id,old.uid,old.title,old.description,old.tags,old.search_text);
+  INSERT INTO memos_fts(rowid,id,memo_id,uid,title,description,tags,search_text)
+  VALUES(new.rowid,new.id,new.memo_id,new.uid,new.title,new.description,new.tags,new.search_text);
 END;

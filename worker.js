@@ -43,6 +43,37 @@ function sanitizeFTS(q) {
     .split(/\s+/).filter(Boolean).map(w => w + '*').join(' ').slice(0, 200);
 }
 
+function stripHtml(html) {
+  return (html || '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ').trim().slice(0, 30000);
+}
+
+async function syncSearchText(env, id, noteHtml, meta) {
+  try {
+    if (noteHtml === undefined) {
+      const o = await env.MEMO_R2.get(pfx(id) + '_note');
+      noteHtml = o ? await o.text() : '';
+    }
+    if (meta === undefined) {
+      const o = await env.MEMO_R2.get(pfx(id) + '_meta');
+      meta = { files: {} };
+      if (o) { try { meta = JSON.parse(await o.text()); } catch {} }
+    }
+    const files = meta?.files || {};
+    const parts = [
+      stripHtml(noteHtml),
+      Object.keys(files).join(' '),
+      Object.values(files).flatMap(f => f.tags || []).join(' '),
+    ];
+    const searchText = parts.filter(Boolean).join(' ').slice(0, 50000);
+    await env.MEMO_D1.prepare('UPDATE memos SET search_text=? WHERE id=?').bind(searchText, id).run();
+  } catch {}
+}
+
 const pfx = id => `memo-${id}/`;
 
 function dec(s) { try { return decodeURIComponent(s); } catch { return s; } }
@@ -126,7 +157,9 @@ export default {
         return new Response(content, { headers: { ...h, 'Content-Type': 'text/html; charset=utf-8' } });
       }
       if (method === 'PUT') {
-        await env.MEMO_R2.put(pfx(id) + '_note', await request.text(), { httpMetadata: { contentType: 'text/html' } });
+        const noteHtml = await request.text();
+        await env.MEMO_R2.put(pfx(id) + '_note', noteHtml, { httpMetadata: { contentType: 'text/html' } });
+        await syncSearchText(env, id, noteHtml, undefined);
         return json({ ok: true }, 200, h);
       }
     }
@@ -142,7 +175,9 @@ export default {
         catch { return json({ files: {}, folders: [], trash: [] }, 200, h); }
       }
       if (method === 'PUT') {
-        await env.MEMO_R2.put(pfx(id) + '_meta', JSON.stringify(await request.json()), { httpMetadata: { contentType: 'application/json' } });
+        const metaBody = await request.json();
+        await env.MEMO_R2.put(pfx(id) + '_meta', JSON.stringify(metaBody), { httpMetadata: { contentType: 'application/json' } });
+        await syncSearchText(env, id, undefined, metaBody);
         return json({ ok: true }, 200, h);
       }
     }
@@ -267,6 +302,36 @@ export default {
         await env.MEMO_D1.prepare('DELETE FROM memos WHERE id=?').bind(id).run();
         return json({ ok: true }, 200, h);
       }
+    }
+
+    // ── Search index rebuild (one-time migration + backfill) ─────────────────
+    if (path === '/search/rebuild' && method === 'POST') {
+      // 1. Add search_text column if missing
+      try { await env.MEMO_D1.prepare("ALTER TABLE memos ADD COLUMN search_text TEXT NOT NULL DEFAULT ''").run(); } catch {}
+
+      // 2. Recreate FTS5 table and triggers to include search_text
+      const stmts = [
+        'DROP TRIGGER IF EXISTS memos_ai',
+        'DROP TRIGGER IF EXISTS memos_ad',
+        'DROP TRIGGER IF EXISTS memos_au',
+        'DROP TABLE IF EXISTS memos_fts',
+        `CREATE VIRTUAL TABLE memos_fts USING fts5(id UNINDEXED,memo_id,uid,title,description,tags,search_text,content='memos',content_rowid='rowid')`,
+        `CREATE TRIGGER memos_ai AFTER INSERT ON memos BEGIN INSERT INTO memos_fts(rowid,id,memo_id,uid,title,description,tags,search_text) VALUES(new.rowid,new.id,new.memo_id,new.uid,new.title,new.description,new.tags,new.search_text); END`,
+        `CREATE TRIGGER memos_ad AFTER DELETE ON memos BEGIN INSERT INTO memos_fts(memos_fts,rowid,id,memo_id,uid,title,description,tags,search_text) VALUES('delete',old.rowid,old.id,old.memo_id,old.uid,old.title,old.description,old.tags,old.search_text); END`,
+        `CREATE TRIGGER memos_au AFTER UPDATE ON memos BEGIN INSERT INTO memos_fts(memos_fts,rowid,id,memo_id,uid,title,description,tags,search_text) VALUES('delete',old.rowid,old.id,old.memo_id,old.uid,old.title,old.description,old.tags,old.search_text); INSERT INTO memos_fts(rowid,id,memo_id,uid,title,description,tags,search_text) VALUES(new.rowid,new.id,new.memo_id,new.uid,new.title,new.description,new.tags,new.search_text); END`,
+      ];
+      for (const sql of stmts) {
+        try { await env.MEMO_D1.prepare(sql).run(); } catch {}
+      }
+
+      // 3. Backfill search_text for all memos from R2
+      const { results: all } = await env.MEMO_D1.prepare('SELECT id FROM memos').all();
+      await Promise.all((all || []).map(({ id }) => syncSearchText(env, id)));
+
+      // 4. Rebuild FTS5 content index
+      await env.MEMO_D1.prepare("INSERT INTO memos_fts(memos_fts) VALUES('rebuild')").run();
+
+      return json({ ok: true, count: (all || []).length }, 200, h);
     }
 
     return json({ error: 'not_found' }, 404, h);
