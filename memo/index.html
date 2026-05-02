@@ -40,6 +40,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #desc-input{width:100%;border:none;outline:none;font-size:.9rem;font-family:inherit;color:var(--muted);background:transparent;resize:none;min-height:20px;line-height:1.5;display:block;overflow:hidden}
 #desc-input::placeholder{color:#d4d4d4}
 
+/* Quick meta bar (UID + Tags) */
+.quick-meta{background:var(--surface);border-top:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.qm-uid{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.qm-label{font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.qm-uid input{border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:.85rem;font-family:inherit;width:150px;color:var(--text);background:transparent}
+.qm-uid input:focus{outline:none;border-color:var(--accent)}
+.qm-sep{width:1px;height:20px;background:var(--border);flex-shrink:0}
+.qm-tags{display:flex;align-items:center;gap:8px;flex:1;min-width:180px}
+.qm-tags .tag-input-wrap{flex:1;padding:4px 8px;min-height:32px}
+#note-editor img[data-paste-img]{cursor:pointer;border-radius:4px;display:block;margin:6px 0}
+#note-editor img[data-paste-img]:hover{outline:2px solid var(--accent)}
+
 .section{background:var(--surface);border-top:1px solid var(--border)}
 .section summary{padding:14px 20px;cursor:pointer;font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;justify-content:space-between;list-style:none;user-select:none}
 .section summary::-webkit-details-marker{display:none}
@@ -263,6 +275,21 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <textarea id="desc-input" placeholder="Add a description…" rows="1" oninput="autoGrow(this)"></textarea>
 </div>
 
+<!-- Quick meta: UID + Tags -->
+<div class="quick-meta">
+  <div class="qm-uid">
+    <span class="qm-label">UID</span>
+    <input type="text" id="uid-input" placeholder="e.g. STOR-001" onchange="saveInfo()">
+  </div>
+  <div class="qm-sep"></div>
+  <div class="qm-tags">
+    <span class="qm-label">Tags</span>
+    <div class="tag-input-wrap" id="tag-wrap" onclick="document.getElementById('tag-text-input').focus()">
+      <input type="text" id="tag-text-input" placeholder="Add tag, press Enter…">
+    </div>
+  </div>
+</div>
+
 <details class="section" open>
   <summary>Notes <span class="s-right" id="note-hint"></span></summary>
   <div class="section-body">
@@ -283,18 +310,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 </details>
 
 <details class="section">
-  <summary>Memo Info <span class="s-right" id="uid-hint"></span></summary>
+  <summary>Memo Info</summary>
   <div class="section-body">
-    <div class="field-group">
-      <label class="field-label">Unique Identifier (UID)</label>
-      <input type="text" class="field-input" id="uid-input" placeholder="e.g. STOR-001">
-    </div>
-    <div class="field-group">
-      <label class="field-label">Tags</label>
-      <div class="tag-input-wrap" id="tag-wrap" onclick="document.getElementById('tag-text-input').focus()">
-        <input type="text" id="tag-text-input" placeholder="Add tag, press Enter…">
-      </div>
-    </div>
     <div class="field-group">
       <label class="field-label">Cover Image</label>
       <select id="cover-select" class="field-input"><option value="">— None —</option></select>
@@ -509,7 +526,6 @@ async function loadMemo() {
   autoGrow(document.getElementById('desc-input'));
   document.getElementById('pin-btn').classList.toggle('active', !!memo.pinned);
   document.getElementById('uid-input').value = memo.uid || '';
-  document.getElementById('uid-hint').textContent = memo.uid || '';
   renderTags(safeJson(memo.tags, []));
   renderLinks(safeJson(memo.links, []));
 }
@@ -1077,6 +1093,57 @@ async function saveFileInfo() {
 
 function exec(cmd) { document.getElementById('note-editor').focus(); document.execCommand(cmd, false, null); }
 function clearNote() { if (!confirm('Clear the note?')) return; document.getElementById('note-editor').innerHTML = ''; document.getElementById('note-status').textContent = 'Cleared'; }
+
+// Paste image from clipboard
+document.getElementById('note-editor').addEventListener('paste', e => {
+  const items = Array.from(e.clipboardData.items);
+  const imgItem = items.find(i => i.type.startsWith('image/'));
+  if (!imgItem) return;
+  e.preventDefault();
+  const file = imgItem.getAsFile();
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.execCommand('insertHTML', false,
+      `<img src="${ev.target.result}" data-paste-img="1" style="max-width:100%;height:auto">`
+    );
+    saveNote();
+  };
+  reader.readAsDataURL(file);
+});
+
+// Click pasted image → size picker
+document.getElementById('note-editor').addEventListener('click', e => {
+  if (e.target.tagName === 'IMG' && e.target.dataset.pasteImg) {
+    e.stopPropagation();
+    window._noteImg = e.target;
+    showFloatMenuAt(e.target.getBoundingClientRect(), [
+      { label: 'Small  (200 px)', fn: `setNoteImgSize('small')` },
+      { label: 'Best fit  (100%)', fn: `setNoteImgSize('fit')` },
+      { label: 'Original size', fn: `setNoteImgSize('original')` },
+    ]);
+  }
+});
+
+function showFloatMenuAt(rect, items) {
+  const menu = document.getElementById('float-menu');
+  menu.innerHTML = items.map(item =>
+    `<button onclick="${item.fn}">${esc(item.label)}</button>`
+  ).join('');
+  menu.style.display = 'block';
+  let left = rect.left, top = rect.bottom + 4;
+  if (left + 170 > window.innerWidth) left = window.innerWidth - 175;
+  if (top + items.length * 40 > window.innerHeight) top = rect.top - items.length * 40 - 4;
+  menu.style.left = left + 'px'; menu.style.top = top + 'px';
+}
+
+function setNoteImgSize(mode) {
+  const img = window._noteImg; if (!img) return;
+  if (mode === 'small')    { img.style.width = '200px'; img.style.maxWidth = '200px'; img.style.height = 'auto'; }
+  else if (mode === 'fit') { img.style.width = '';       img.style.maxWidth = '100%'; img.style.height = 'auto'; }
+  else                     { img.style.width = 'auto';   img.style.maxWidth = 'none'; img.style.height = 'auto'; }
+  saveNote();
+}
+
 async function saveNote() {
   const html = document.getElementById('note-editor').innerHTML;
   document.getElementById('note-status').textContent = 'Saving…';
@@ -1097,7 +1164,7 @@ async function saveInfo() {
       body: JSON.stringify({ title: document.getElementById('title-input').value.trim(), description: document.getElementById('desc-input').value.trim(),
         uid: document.getElementById('uid-input').value.trim(), cover_file: document.getElementById('cover-select').value,
         tags: getTagsFromUI(), links: getLinksFromUI(), pinned: memo ? memo.pinned : 0 }) });
-    if (memo) { memo.uid = document.getElementById('uid-input').value.trim(); document.getElementById('uid-hint').textContent = memo.uid; }
+    if (memo) { memo.uid = document.getElementById('uid-input').value.trim(); }
   } catch {}
 }
 document.getElementById('title-input').addEventListener('change', saveInfo);
