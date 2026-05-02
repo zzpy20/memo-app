@@ -720,7 +720,7 @@ function renderFileList() {
         ${thumbHtml}
         <div class="file-row-info">
           <div class="file-row-name" title="${esc(name)}">${esc(name)}</div>
-          <div class="file-row-meta">${folderPart ? `${esc(folderPart)} · ` : ''}${fmtSize(f.size)} · ${fmtDate(f.uploaded)}${fm.caption ? ` · <em>${esc(fm.caption)}</em>` : ''}</div>
+          <div class="file-row-meta">${folderPart ? `${esc(folderPart)} · ` : ''}${fmtSize(f.size)} · ${fmtDate(f.uploaded)}${fm.caption ? ` · <em>${esc(fm.caption)}</em>` : ''}${fm.tags?.length ? ` · <span style="color:var(--accent)">Tags: ${fm.tags.map(t => esc(t)).join(', ')}</span>` : ''}</div>
         </div>
         <div class="file-row-actions">
           <button onclick="showMoveMenu(event,'${esc(f.key)}')">Move ▾</button>
