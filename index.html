@@ -507,7 +507,7 @@ async function updateTrashCount() {
   try {
     const memos = await (await api('/memos?trash=1')).json();
     const badge = document.getElementById('trash-count');
-    if (memos.length) { badge.textContent = memos.length; badge.style.display = ''; }
+    if (memos.length) { badge.textContent = memos.length; badge.style.display = 'inline'; }
     else { badge.style.display = 'none'; }
   } catch {}
 }
