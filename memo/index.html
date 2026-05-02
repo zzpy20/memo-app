@@ -90,6 +90,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .link-row input:focus{outline:none;border-color:var(--accent)}
 .link-row button{padding:5px 9px;border:1px solid var(--border);border-radius:7px;font-size:.8rem;cursor:pointer;background:transparent;color:var(--muted)}
 .link-row button:hover{border-color:var(--danger);color:var(--danger)}
+.link-open-btn{padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:.8rem;color:var(--muted);text-decoration:none;line-height:1;flex-shrink:0}
+.link-open-btn:hover{border-color:var(--accent);color:var(--accent)}
 #add-link-btn{padding:6px 12px;border:1px dashed var(--border);border-radius:7px;font-size:.82rem;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit}
 #add-link-btn:hover{border-color:var(--accent);color:var(--accent)}
 #save-info-btn{margin-top:14px;padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.9rem;cursor:pointer;font-family:inherit;font-weight:500}
@@ -1288,6 +1290,7 @@ function renderLinks(links) {
     const row = document.createElement('div'); row.className = 'link-row';
     row.innerHTML = `<input type="text" placeholder="Label" value="${esc(l.label)}" data-idx="${i}" data-type="label">
       <input type="url" placeholder="URL" value="${esc(l.url)}" data-idx="${i}" data-type="url">
+      ${l.url ? `<a class="link-open-btn" href="${esc(l.url)}" target="_blank" rel="noopener" title="Open link">↗</a>` : ''}
       <button onclick="removeLink(${i})">✕</button>`;
     list.appendChild(row);
   });
