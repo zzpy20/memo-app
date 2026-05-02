@@ -34,7 +34,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 .search-wrap input:focus{outline:none;border-color:var(--accent)}
 #new-btn{padding:8px 18px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.9rem;font-family:inherit;cursor:pointer;font-weight:500;white-space:nowrap;flex-shrink:0}
 #new-btn:hover{background:var(--accent-hover)}
-#rebuild-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:.85rem;cursor:pointer;color:var(--muted);flex-shrink:0;line-height:1}
+#rebuild-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:.82rem;cursor:pointer;color:var(--muted);flex-shrink:0;line-height:1;font-family:inherit}
 #rebuild-btn:hover{border-color:var(--accent);color:var(--accent)}
 
 #tag-bar{padding:10px 24px;display:flex;gap:8px;flex-wrap:wrap;background:var(--surface);border-bottom:1px solid var(--border)}
@@ -83,7 +83,7 @@ main{padding:24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280
   <div class="search-wrap">
     <input type="search" id="search-input" placeholder="Search memos…" oninput="onSearch(this.value)">
   </div>
-  <button id="rebuild-btn" title="Rebuild search index (run once after update)" onclick="rebuildIndex()">⟳</button>
+  <button id="rebuild-btn" title="Rebuild search index — run this after deploying a worker update, or if search results seem stale. Takes a few seconds." onclick="rebuildIndex()">⟳ Reindex</button>
   <button id="new-btn" onclick="newMemo()">+ New Memo</button>
 </header>
 
