@@ -94,7 +94,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .link-open-btn:hover{border-color:var(--accent);color:var(--accent)}
 #add-link-btn{padding:6px 12px;border:1px dashed var(--border);border-radius:7px;font-size:.82rem;cursor:pointer;background:transparent;color:var(--muted);font-family:inherit}
 #add-link-btn:hover{border-color:var(--accent);color:var(--accent)}
-#save-info-btn{margin-top:14px;padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.9rem;cursor:pointer;font-family:inherit;font-weight:500}
+#save-info-btn{padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.9rem;cursor:pointer;font-family:inherit;font-weight:500}
 #cover-select{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit}
 
 /* File browser */
@@ -343,7 +343,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="links-list" id="links-list"></div>
       <button id="add-link-btn" onclick="addLink()">+ Add link</button>
     </div>
-    <button id="save-info-btn" onclick="saveInfo()">Save</button>
+    <div class="note-footer" style="margin-top:14px">
+      <span id="info-status" style="font-size:.78rem;color:var(--muted)"></span>
+      <button id="save-info-btn" onclick="saveInfo()">Save</button>
+    </div>
   </div>
 </details>
 
@@ -1249,16 +1252,28 @@ async function togglePin() {
   await saveInfo();
 }
 async function saveInfo() {
+  const st = document.getElementById('info-status');
+  if (st) st.textContent = 'Saving…';
   try {
     await api('/memos/' + memoId, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: document.getElementById('title-input').value.trim(), description: document.getElementById('desc-input').value.trim(),
         uid: document.getElementById('uid-input').value.trim(), cover_file: document.getElementById('cover-select').value,
         tags: getTagsFromUI(), links: getLinksFromUI(), pinned: memo ? memo.pinned : 0 }) });
     if (memo) { memo.uid = document.getElementById('uid-input').value.trim(); }
-  } catch {}
+    if (st) { st.textContent = 'Saved ✓'; setTimeout(() => { if (st) st.textContent = ''; }, 2000); }
+  } catch { if (st) st.textContent = 'Error'; }
 }
 document.getElementById('title-input').addEventListener('change', saveInfo);
 document.getElementById('desc-input').addEventListener('change', saveInfo);
+
+// Auto-save links on input (2 s debounce)
+let _infoTimer = null;
+document.getElementById('links-list').addEventListener('input', () => {
+  const st = document.getElementById('info-status');
+  if (st) st.textContent = 'Unsaved…';
+  clearTimeout(_infoTimer);
+  _infoTimer = setTimeout(saveInfo, 2000);
+});
 
 // ── Tags ──────────────────────────────────────────────────────────────────────
 
