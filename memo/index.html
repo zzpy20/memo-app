@@ -1278,7 +1278,7 @@ document.getElementById('links-list').addEventListener('input', e => {
       btn.className = 'link-open-btn'; btn.target = '_blank'; btn.rel = 'noopener'; btn.title = 'Open link'; btn.textContent = '↗';
       e.target.insertAdjacentElement('afterend', btn);
     }
-    if (btn) { btn.href = url; btn.style.display = url ? '' : 'none'; }
+    if (btn) { btn.href = /^https?:\/\//i.test(url) ? url : 'https://' + url; btn.style.display = url ? '' : 'none'; }
   }
   const st = document.getElementById('info-status');
   if (st) st.textContent = 'Unsaved…';
@@ -1316,7 +1316,7 @@ function renderLinks(links) {
     const row = document.createElement('div'); row.className = 'link-row';
     row.innerHTML = `<input type="text" placeholder="Label" value="${esc(l.label)}" data-idx="${i}" data-type="label">
       <input type="url" placeholder="URL" value="${esc(l.url)}" data-idx="${i}" data-type="url">
-      ${l.url ? `<a class="link-open-btn" href="${esc(l.url)}" target="_blank" rel="noopener" title="Open link">↗</a>` : ''}
+      ${l.url ? `<a class="link-open-btn" href="${/^https?:\/\//i.test(l.url) ? esc(l.url) : 'https://' + esc(l.url)}" target="_blank" rel="noopener" title="Open link">↗</a>` : ''}
       <button onclick="removeLink(${i})">✕</button>`;
     list.appendChild(row);
   });
