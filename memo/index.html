@@ -1266,9 +1266,20 @@ async function saveInfo() {
 document.getElementById('title-input').addEventListener('change', saveInfo);
 document.getElementById('desc-input').addEventListener('change', saveInfo);
 
-// Auto-save links on input (2 s debounce)
+// Auto-save links on input (2 s debounce) + live ↗ button
 let _infoTimer = null;
-document.getElementById('links-list').addEventListener('input', () => {
+document.getElementById('links-list').addEventListener('input', e => {
+  if (e.target.dataset.type === 'url') {
+    const row = e.target.closest('.link-row');
+    let btn = row.querySelector('.link-open-btn');
+    const url = e.target.value.trim();
+    if (url && !btn) {
+      btn = document.createElement('a');
+      btn.className = 'link-open-btn'; btn.target = '_blank'; btn.rel = 'noopener'; btn.title = 'Open link'; btn.textContent = '↗';
+      e.target.insertAdjacentElement('afterend', btn);
+    }
+    if (btn) { btn.href = url; btn.style.display = url ? '' : 'none'; }
+  }
   const st = document.getElementById('info-status');
   if (st) st.textContent = 'Unsaved…';
   clearTimeout(_infoTimer);
