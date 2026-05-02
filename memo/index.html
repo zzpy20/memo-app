@@ -1163,6 +1163,18 @@ function applyHighlight(color) {
   if (!document.execCommand('hiliteColor', false, color)) document.execCommand('backColor', false, color);
 }
 
+// Note auto-save (2 s debounce after last change; immediate on blur)
+let _noteTimer = null;
+document.getElementById('note-editor').addEventListener('input', () => {
+  document.getElementById('note-status').textContent = 'Unsaved…';
+  clearTimeout(_noteTimer);
+  _noteTimer = setTimeout(saveNote, 2000);
+});
+document.getElementById('note-editor').addEventListener('blur', () => {
+  clearTimeout(_noteTimer);
+  saveNote();
+});
+
 // Keyboard shortcuts for font size (⌘= bigger, ⌘- smaller)
 document.addEventListener('keydown', e => {
   if (document.activeElement !== document.getElementById('note-editor')) return;
