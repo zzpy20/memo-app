@@ -121,6 +121,49 @@ main{padding:24px 52px 24px 24px;display:grid;grid-template-columns:repeat(auto-
 .lr-trash-actions .restore-btn{border-color:var(--accent);color:var(--accent)}
 .lr-trash-actions .restore-btn:hover{background:var(--accent);color:#fff}
 .lr-trash-actions .perm-btn:hover{border-color:var(--danger);color:var(--danger)}
+
+@media (max-width: 640px) {
+  /* ── Auth ── */
+  .auth-box{width:calc(100vw - 48px);padding:32px 24px}
+
+  /* ── Header: 3 rows ─────────────────────────────────────────────────────
+     Row 1: Logo | → auto-margin → | 🗑 + New Memo + Sign out
+     Row 2: Search bar (full width, order 10)
+     Row 3: Sort dropdown + view toggles (order 20+)
+  ── */
+  header{height:auto;padding:8px 16px;flex-wrap:wrap;gap:6px}
+  #rebuild-btn{display:none}
+  /* push trash and everything after it to the right */
+  #trash-btn{margin-left:auto}
+  /* search: own full-width row */
+  .search-wrap{order:10;flex:1 1 100%}
+  /* sort + view toggles: row below search */
+  #sort-select{order:20;font-size:.8rem;padding:5px 6px}
+  .view-btns{order:21}
+  /* compact remaining row-1 buttons */
+  #new-btn{font-size:.85rem;padding:7px 12px}
+  #signout-btn{font-size:.8rem;padding:5px 10px}
+
+  /* ── Tag bar + bars ── */
+  #tag-bar{padding:8px 16px}
+  #trash-bar{padding:8px 16px}
+
+  /* ── Grid: remove timeline padding, tighter gap ── */
+  main,#grid{padding:12px 16px;gap:12px}
+  #grid.view-list{padding:10px 16px}
+
+  /* ── Timeline: never show on mobile ── */
+  #timeline{display:none !important}
+
+  /* ── List view: hide tag pills (cluttered); compress right col ── */
+  .lr-tags{display:none}
+  .lr-right{min-width:60px}
+  /* actions always visible on touch (no hover state) */
+  .lr-actions{opacity:1}
+
+  /* ── Cards: lighter shadow on mobile ── */
+  .memo-card{box-shadow:0 1px 2px rgba(0,0,0,.06)}
+}
 </style>
 </head>
 <body>
