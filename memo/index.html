@@ -1097,12 +1097,25 @@ async function bulkMoveTo(folder) {
 // ── Upload ────────────────────────────────────────────────────────────────────
 
 const dropZone = document.getElementById('drop-zone');
-const fileInput = document.getElementById('file-input');
+let fileInput = document.getElementById('file-input');
+
+function resetFileInput() {
+  const fresh = fileInput.cloneNode(false);
+  fileInput.parentNode.replaceChild(fresh, fileInput);
+  fileInput = fresh;
+  fileInput.addEventListener('change', onFileInputChange);
+}
+async function onFileInputChange() {
+  const files = Array.from(fileInput.files);
+  resetFileInput(); // reset immediately so camera is ready again on iOS
+  await uploadFiles(files);
+}
+fileInput.addEventListener('change', onFileInputChange);
+
 dropZone.addEventListener('click', () => fileInput.click());
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
 dropZone.addEventListener('drop', async e => { e.preventDefault(); dropZone.classList.remove('drag-over'); await uploadFiles(Array.from(e.dataTransfer.files)); });
-fileInput.addEventListener('change', async () => { await uploadFiles(Array.from(fileInput.files)); fileInput.value = ''; });
 
 async function uploadFiles(files) {
   if (!files.length) return;
