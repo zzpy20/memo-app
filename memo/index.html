@@ -489,7 +489,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="drop-zone" id="drop-zone">
     <div class="drop-zone-icon">↑</div>
     <div class="drop-zone-text" id="drop-zone-text">Drop files here · or <b>click to browse</b></div>
-    <input type="file" id="file-input" multiple hidden>
     <div id="upload-progress">
       <div id="upload-bar"><div id="upload-bar-fill"></div></div>
       <div id="upload-bar-text"></div>
@@ -511,7 +510,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <button class="sort-dir-btn" id="sort-dir-btn" onclick="toggleSortDir()">▲</button>
     </div>
     <div class="fb-right">
-      <label class="fb-btn fb-btn-primary" for="file-input">Upload</label>
+      <button class="fb-btn fb-btn-primary" onclick="openFilePicker()">Upload</button>
       <button class="fb-btn" onclick="addFolder()">New folder</button>
       <button class="fb-btn fb-btn-danger" id="trash-btn" onclick="openTrashModal()">Trash (<span id="trash-count-btn">0</span>)</button>
       <button class="fb-btn" onclick="loadFiles()">Refresh</button>
@@ -1097,22 +1096,27 @@ async function bulkMoveTo(folder) {
 // ── Upload ────────────────────────────────────────────────────────────────────
 
 const dropZone = document.getElementById('drop-zone');
-let fileInput = document.getElementById('file-input');
 
-function resetFileInput() {
-  const fresh = fileInput.cloneNode(false);
-  fileInput.parentNode.replaceChild(fresh, fileInput);
-  fileInput = fresh;
-  fileInput.addEventListener('change', onFileInputChange);
+// Create a fresh input element on every tap — required on iOS Safari:
+// reusing the same input (even after value='' or cloneNode) causes the
+// change event to not fire after a camera capture if the temp file path
+// is the same as the previous capture (photos reuse the same temp path;
+// videos get unique paths, which is why videos already worked fine).
+function openFilePicker() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.multiple = true;
+  input.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+  document.body.appendChild(input);
+  input.addEventListener('change', async () => {
+    const files = Array.from(input.files);
+    input.remove();
+    await uploadFiles(files);
+  });
+  input.click();
 }
-async function onFileInputChange() {
-  const files = Array.from(fileInput.files);
-  resetFileInput(); // reset immediately so camera is ready again on iOS
-  await uploadFiles(files);
-}
-fileInput.addEventListener('change', onFileInputChange);
 
-dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('click', openFilePicker);
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
 dropZone.addEventListener('drop', async e => { e.preventDefault(); dropZone.classList.remove('drag-over'); await uploadFiles(Array.from(e.dataTransfer.files)); });
