@@ -514,6 +514,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <button class="view-btn" id="view-grid-btn" onclick="setView('grid')" title="Grid view">⊞</button>
       <select id="sort-select" onchange="renderFileList()">
         <option value="name">Name</option>
+        <option value="type">Type</option>
         <option value="date">Date</option>
         <option value="size">Size</option>
       </select>
@@ -772,6 +773,7 @@ function getVisibleFiles() {
   files.sort((a, b) => {
     let v = sort === 'date' ? new Date(a.uploaded) - new Date(b.uploaded)
           : sort === 'size' ? a.size - b.size
+          : sort === 'type' ? ext(a.key).localeCompare(ext(b.key)) || a.key.localeCompare(b.key)
           : a.key.localeCompare(b.key);
     return v * sortDir;
   });
