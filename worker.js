@@ -243,27 +243,6 @@ export default {
       return json({ ok: true, key: dstKey }, 200, h);
     }
 
-    // ── Rename file ───────────────────────────────────────────────────────────
-    m = path.match(/^\/memos\/([^/]+)\/rename$/);
-    if (m && method === 'POST') {
-      const id = dec(m[1]);
-      const { oldKey, newName } = await request.json();
-      if (!oldKey || !newName || oldKey.startsWith('_')) return json({ error: 'invalid' }, 400, h);
-      const safeName = newName.replace(/[/\\]/g, '').trim();
-      if (!safeName || safeName.startsWith('_')) return json({ error: 'invalid name' }, 400, h);
-      const folder = oldKey.includes('/') ? oldKey.split('/').slice(0, -1).join('/') : '';
-      const newKey = folder ? folder + '/' + safeName : safeName;
-      if (oldKey === newKey) return json({ ok: true, key: newKey }, 200, h);
-      const obj = await env.MEMO_R2.get(pfx(id) + oldKey);
-      if (!obj) return json({ error: 'not_found' }, 404, h);
-      if (obj.size > 20 * 1024 * 1024) return json({ error: 'too_large' }, 413, h);
-      const exists = await env.MEMO_R2.head(pfx(id) + newKey);
-      if (exists) return json({ error: 'exists' }, 409, h);
-      await env.MEMO_R2.put(pfx(id) + newKey, obj.body, { httpMetadata: obj.httpMetadata });
-      await env.MEMO_R2.delete(pfx(id) + oldKey);
-      return json({ ok: true, key: newKey }, 200, h);
-    }
-
     // ── Trash (soft delete) ───────────────────────────────────────────────────
     m = path.match(/^\/memos\/([^/]+)\/trash$/);
     if (m && method === 'POST') {
