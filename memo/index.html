@@ -1079,6 +1079,7 @@ function showFileMenu(e, key) {
   showFloatMenu(e, [
     { label: 'View / Preview', fn: `openLightbox('${esc(key)}')` },
     { label: 'File info', fn: `openFileInfo('${esc(key)}')` },
+    { label: '✏️ Rename', fn: `renameFile('${esc(key)}')` },
     { label: 'Move to…', fn: `showMoveMenu(event,'${esc(key)}')` },
     '---',
     { label: '🗑 Move to trash', fn: `trashFile('${esc(key)}')`, danger: true },
@@ -1102,6 +1103,29 @@ async function moveFile(srcKey, dstFolder) {
     if (memo && memo.cover_file === srcKey) { memo.cover_file = newKey; await saveInfo(); }
     await saveMeta(); await loadFiles();
   } catch {}
+}
+
+async function renameFile(key) {
+  const oldName = basename(key);
+  const newName = (prompt('Rename to:', oldName) || '').trim();
+  if (!newName || newName === oldName) return;
+  try {
+    const r = await api('/memos/' + memoId + '/rename', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ oldKey: key, newName })
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      if (r.status === 413) { alert('This file is over 20 MB and cannot be renamed.'); return; }
+      if (r.status === 409) { alert(`A file named "${newName}" already exists here.`); return; }
+      alert('Rename failed: ' + (err.error || r.status)); return;
+    }
+    const { key: newKey } = await r.json();
+    if (meta.files[key]) { meta.files[newKey] = meta.files[key]; delete meta.files[key]; }
+    if (memo && memo.cover_file === key) { memo.cover_file = newKey; await saveInfo(); }
+    await saveMeta(); await loadFiles();
+  } catch { alert('Rename failed.'); }
 }
 
 async function bulkMoveTo(folder) {
