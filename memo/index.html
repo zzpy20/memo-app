@@ -120,6 +120,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .snippet-foot{display:flex;justify-content:flex-end;padding:6px 14px;border-top:1px solid var(--border)}
 .snippet-foot button{padding:4px 12px;border:1px solid var(--border);border-radius:6px;font-size:.78rem;cursor:pointer;background:transparent;font-family:inherit;color:var(--muted)}
 .snippet-foot button:hover{border-color:var(--accent);color:var(--accent)}
+.snippet-expand{background:none;border:none;cursor:pointer;color:var(--muted);font-size:.85rem;padding:2px 6px;border-radius:4px;flex-shrink:0;line-height:1}
+.snippet-expand:hover{background:var(--bg);color:var(--accent)}
+#clip-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;display:flex;align-items:center;justify-content:center}
+#clip-modal.hidden{display:none}
+#clip-modal-box{background:var(--surface);border-radius:14px;width:min(760px,92vw);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+#clip-modal-hdr{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0}
+#clip-modal-title{font-weight:600;font-size:1rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#clip-modal-close{background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--muted);padding:2px 6px;border-radius:6px;line-height:1}
+#clip-modal-close:hover{background:var(--bg);color:var(--text)}
+#clip-modal-body{padding:20px;overflow-y:auto;font-size:.92rem;line-height:1.75;word-break:break-word;flex:1}
 .snippets-hdr{display:flex;align-items:center;justify-content:space-between;margin-top:16px;margin-bottom:4px}
 .snippets-hdr-label{font-size:.75rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 #export-clips-btn{padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.75rem;cursor:pointer;background:transparent;font-family:inherit;color:var(--muted)}
@@ -606,6 +616,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
       <button class="btn-save" onclick="saveFileInfo()">Save</button>
     </div>
+  </div>
+</div>
+
+<!-- Clip modal -->
+<div id="clip-modal" class="hidden">
+  <div id="clip-modal-box">
+    <div id="clip-modal-hdr">
+      <span id="clip-modal-title"></span>
+      <button id="clip-modal-close" onclick="closeClipModal()">✕</button>
+    </div>
+    <div id="clip-modal-body"></div>
   </div>
 </div>
 
@@ -1763,6 +1784,7 @@ function renderSnippets() {
         <span class="snippet-icon">📋</span>
         <span class="snippet-name" contenteditable="true" spellcheck="false" data-i="${i}" onclick="event.stopPropagation()" onblur="renameClip(this)">${esc(s.title)}</span>
         <span class="snippet-ts">${new Date(s.created_at).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>
+        <button class="snippet-expand" onclick="openClipModal(${i},event)" title="Open in popup">⤢</button>
         <button class="snippet-del" onclick="deleteSnippet(${i},event)" title="Delete clip">✕</button>
         <span class="snippet-chev" id="chev-${i}">▸</span>
       </div>
@@ -1782,6 +1804,24 @@ function toggleSnippet(i) {
   body.style.display = open ? 'none' : '';
   chev.classList.toggle('open', !open);
 }
+function openClipModal(i, e) {
+  e.stopPropagation();
+  const s = snippets[i];
+  document.getElementById('clip-modal-title').textContent = s.title;
+  document.getElementById('clip-modal-body').innerHTML = s.content;
+  document.getElementById('clip-modal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function closeClipModal() {
+  document.getElementById('clip-modal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+document.getElementById('clip-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('clip-modal')) closeClipModal();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !document.getElementById('clip-modal').classList.contains('hidden')) closeClipModal();
+});
 
 async function deleteSnippet(i, e) {
   e.stopPropagation();
