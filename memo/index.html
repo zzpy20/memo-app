@@ -392,6 +392,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="header-spacer"></div>
   <button class="btn-icon" id="pin-btn" data-tip="Pin" onclick="togglePin()">📌</button>
   <button class="btn-icon" id="dup-btn" data-tip="Duplicate" onclick="duplicateMemo()">⧉</button>
+  <button class="btn-icon" id="copy-link-btn" data-tip="Copy link" onclick="copyLink()">🔗</button>
   <button class="btn-icon" data-tip="Export note" onclick="exportNote()">↓</button>
   <button class="btn-icon" data-tip="Print label" onclick="printLabel()">🏷</button>
   <button class="btn-icon" data-tip="Move to trash" onclick="trashMemo()">🗑</button>
@@ -1510,6 +1511,16 @@ async function saveNote() {
   document.getElementById('note-status').textContent = 'Saving…';
   try { await api('/memos/' + memoId + '/note', { method: 'PUT', headers: { 'Content-Type': 'text/plain' }, body: html }); document.getElementById('note-status').textContent = 'Saved ✓'; }
   catch { document.getElementById('note-status').textContent = 'Error'; }
+}
+
+async function copyLink() {
+  const title = document.getElementById('title-input').value.trim() || 'Untitled';
+  const text = title + '\n' + window.location.href;
+  await navigator.clipboard.writeText(text);
+  const btn = document.getElementById('copy-link-btn');
+  const prev = btn.textContent;
+  btn.textContent = '✓'; btn.style.opacity = '1';
+  setTimeout(() => { btn.textContent = prev; btn.style.opacity = ''; }, 1500);
 }
 
 // ── Info / Pin ────────────────────────────────────────────────────────────────
