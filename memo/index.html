@@ -42,9 +42,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .gsr-title{font-size:.9rem;font-weight:600;color:var(--text)}
 .gsr-meta{font-size:.75rem;color:var(--accent);font-family:'DM Mono',monospace;margin-top:2px}
 .gsr-desc{font-size:.8rem;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.btn-icon{background:none;border:none;cursor:pointer;padding:5px 7px;border-radius:7px;font-size:.95rem;opacity:.45;line-height:1;transition:opacity .1s;flex-shrink:0}
+.btn-icon{background:none;border:none;cursor:pointer;padding:5px 7px;border-radius:7px;font-size:.95rem;opacity:.45;line-height:1;transition:opacity .1s;flex-shrink:0;position:relative}
 .btn-icon:hover{opacity:1;background:var(--bg)}
 .btn-icon.active{opacity:1}
+.btn-icon[data-tip]::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1c1917;color:#fff;font-size:.7rem;font-family:'DM Sans',sans-serif;white-space:nowrap;padding:3px 8px;border-radius:5px;pointer-events:none;opacity:0;transition:opacity .15s;z-index:500}
+.btn-icon[data-tip]:hover::after{opacity:1}
 #signout-btn{background:none;border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:.78rem;cursor:pointer;color:var(--muted);font-family:inherit;flex-shrink:0}
 #signout-btn:hover{border-color:var(--text);color:var(--text)}
 
@@ -388,11 +390,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <a href="../" class="back-link">← Back</a>
   <span id="memo-id-badge" class="memo-id-badge">…</span>
   <div class="header-spacer"></div>
-  <button class="btn-icon" id="pin-btn" title="Pin" onclick="togglePin()">📌</button>
-  <button class="btn-icon" id="dup-btn" title="Duplicate memo" onclick="duplicateMemo()">⧉</button>
-  <button class="btn-icon" title="Export note as HTML" onclick="exportNote()">↓</button>
-  <button class="btn-icon" title="Print label" onclick="printLabel()">🏷</button>
-  <button class="btn-icon" title="Move to trash" onclick="trashMemo()">🗑</button>
+  <button class="btn-icon" id="pin-btn" data-tip="Pin" onclick="togglePin()">📌</button>
+  <button class="btn-icon" id="dup-btn" data-tip="Duplicate" onclick="duplicateMemo()">⧉</button>
+  <button class="btn-icon" data-tip="Export note" onclick="exportNote()">↓</button>
+  <button class="btn-icon" data-tip="Print label" onclick="printLabel()">🏷</button>
+  <button class="btn-icon" data-tip="Move to trash" onclick="trashMemo()">🗑</button>
   <button id="signout-btn" onclick="logout()">Sign out</button>
 </div>
 
