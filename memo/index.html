@@ -1662,7 +1662,7 @@ function printLabel() {
   const uid = document.getElementById('uid-input').value.trim();
   const title = document.getElementById('title-input').value.trim();
   const mid = document.getElementById('memo-id-badge').textContent;
-  const qrData = mid + (uid ? '\n' + uid : '');
+  const qrData = window.location.href;
   const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=10&data=' + encodeURIComponent(qrData);
 
   document.getElementById('lbl-id').textContent = mid;
@@ -1678,7 +1678,7 @@ function closeLabelModal() { document.getElementById('label-modal').classList.ad
 function printLabelModal() {
   const mid = document.getElementById('lbl-id').textContent;
   const uid = document.getElementById('lbl-uid').textContent;
-  const qrData = mid + (uid ? '\n' + uid : '');
+  const qrData = window.location.href;
   const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=' + encodeURIComponent(qrData);
   const w = window.open('', '_blank', 'width=380,height=500,menubar=no,toolbar=no,location=no,status=no');
   w.document.write(`<!DOCTYPE html><html><head><title>Label</title><style>
