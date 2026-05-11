@@ -115,6 +115,8 @@ main{padding:24px 52px 24px 24px;display:grid;grid-template-columns:repeat(auto-
 .lr-date{font-size:.73rem;color:var(--muted)}
 .lr-date-label{font-size:.65rem;color:var(--muted);opacity:.6;text-transform:uppercase;letter-spacing:.04em;margin-top:5px}
 .lr-uid{font-size:.68rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px}
+.lr-dates-mobile{display:none;margin-top:4px}
+.lr-date-mobile{font-size:.68rem;color:var(--muted)}
 .lr-actions{display:flex;gap:2px;flex-shrink:0;opacity:0;transition:opacity .1s}
 .list-row:hover .lr-actions{opacity:1}
 .lr-trash-actions{display:flex;gap:6px;flex-shrink:0}
@@ -156,9 +158,10 @@ main{padding:24px 52px 24px 24px;display:grid;grid-template-columns:repeat(auto-
   /* ── Timeline: never show on mobile ── */
   #timeline{display:none !important}
 
-  /* ── List view: hide tag pills (cluttered); compress right col ── */
+  /* ── List view: hide tags/right col; show dates inline under title ── */
   .lr-tags{display:none}
-  .lr-right{min-width:100px}
+  .lr-right{display:none}
+  .lr-dates-mobile{display:block}
   /* actions always visible on touch (no hover state) */
   .lr-actions{opacity:1}
 
@@ -340,6 +343,10 @@ function renderMemos(memos, trashMode = false) {
         <div class="lr-main">
           <div class="lr-title ${m.title ? '' : 'untitled'}">${m.pinned ? '📌 ' : ''}${esc(m.title || 'Untitled')}</div>
           <div class="lr-sub">${esc(sub)}</div>
+          <div class="lr-dates-mobile">
+            <div class="lr-date-mobile">Created: ${fmtDateTime(m.created_at)}</div>
+            <div class="lr-date-mobile">Modified: ${fmtDateTime(m.updated_at || m.created_at)}</div>
+          </div>
         </div>
         <div class="lr-tags">${tags.map(t=>`<span class="card-tag">${esc(t)}</span>`).join('')}</div>
         <div class="lr-right">
