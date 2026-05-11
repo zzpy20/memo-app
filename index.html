@@ -111,8 +111,9 @@ main{padding:24px 52px 24px 24px;display:grid;grid-template-columns:repeat(auto-
 .lr-title.untitled{color:var(--muted);font-weight:400;font-style:italic}
 .lr-sub{font-size:.73rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 .lr-tags{display:flex;gap:4px;flex-shrink:0;max-width:220px;overflow:hidden}
-.lr-right{flex-shrink:0;text-align:right;min-width:90px}
+.lr-right{flex-shrink:0;text-align:right;min-width:130px}
 .lr-date{font-size:.73rem;color:var(--muted)}
+.lr-date-label{font-size:.65rem;color:var(--muted);opacity:.6;text-transform:uppercase;letter-spacing:.04em;margin-top:5px}
 .lr-uid{font-size:.68rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px}
 .lr-actions{display:flex;gap:2px;flex-shrink:0;opacity:0;transition:opacity .1s}
 .list-row:hover .lr-actions{opacity:1}
@@ -157,7 +158,7 @@ main{padding:24px 52px 24px 24px;display:grid;grid-template-columns:repeat(auto-
 
   /* ── List view: hide tag pills (cluttered); compress right col ── */
   .lr-tags{display:none}
-  .lr-right{min-width:60px}
+  .lr-right{min-width:100px}
   /* actions always visible on touch (no hover state) */
   .lr-actions{opacity:1}
 
@@ -342,7 +343,10 @@ function renderMemos(memos, trashMode = false) {
         </div>
         <div class="lr-tags">${tags.map(t=>`<span class="card-tag">${esc(t)}</span>`).join('')}</div>
         <div class="lr-right">
-          <div class="lr-date">${fmtDate(m.created_at)}</div>
+          <div class="lr-date-label">Created</div>
+          <div class="lr-date">${fmtDateTime(m.created_at)}</div>
+          <div class="lr-date-label">Modified</div>
+          <div class="lr-date">${fmtDateTime(m.updated_at || m.created_at)}</div>
           ${m.uid ? `<div class="lr-uid">${esc(m.uid)}</div>` : ''}
         </div>
         ${trashMode ? `
@@ -620,6 +624,7 @@ async function rebuildIndex() {
 function safeJson(s, fallback) { try { return typeof s === 'string' ? JSON.parse(s) : (s || fallback); } catch { return fallback; } }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtDate(iso) { return new Date(iso).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}); }
+function fmtDateTime(iso) { const d = new Date(iso); return d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}) + ' ' + d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}); }
 
 init();
 </script>
