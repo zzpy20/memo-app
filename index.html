@@ -225,24 +225,9 @@ main{padding:24px 52px 24px 24px;display:grid;grid-template-columns:repeat(auto-
 </div>
 <div id="tl-tooltip"></div>
 
+<script src="/js/api.js"></script>
 <script>
-const WORKER = 'https://memo-worker.ausz.workers.dev';
-let token = localStorage.getItem('memo_token') || '';
 let allMemos = [], currentTag = '', searchTimer, viewMode = localStorage.getItem('memo_view') || 'grid', currentSort = localStorage.getItem('memo_sort') || 'newest';
-
-function api(path, opts = {}) {
-  const sep = path.includes('?') ? '&' : '?';
-  return fetch(WORKER + path + sep + 't=' + encodeURIComponent(token), opts).then(r => {
-    if (r.status === 401) { logout(); throw new Error('unauthorized'); }
-    return r;
-  });
-}
-
-function logout() {
-  localStorage.removeItem('memo_token');
-  token = '';
-  document.getElementById('auth-overlay').classList.remove('hidden');
-}
 
 async function doAuth() {
   token = document.getElementById('auth-input').value.trim();
@@ -628,10 +613,6 @@ async function rebuildIndex() {
   }
 }
 
-function safeJson(s, fallback) { try { return typeof s === 'string' ? JSON.parse(s) : (s || fallback); } catch { return fallback; } }
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmtDate(iso) { return new Date(iso).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}); }
-function fmtDateTime(iso) { const d = new Date(iso); return d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}) + ' ' + d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}); }
 
 init();
 </script>

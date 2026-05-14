@@ -660,9 +660,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <div class="float-menu" id="float-menu"></div>
 
 
+<script src="../js/api.js"></script>
 <script>
-const WORKER = 'https://memo-worker.ausz.workers.dev';
-let token = localStorage.getItem('memo_token') || '';
 const params = new URLSearchParams(location.search);
 const memoId = params.get('id');
 
@@ -681,15 +680,6 @@ const isPdf = n => ext(n) === 'pdf';
 const isPreviewable = n => isImg(n) || isPdf(n) || isVideo(n);
 const ext = n => (n.split('.').pop()||'').toLowerCase();
 const basename = n => n.split('/').pop();
-
-function api(path, opts={}) {
-  const sep = path.includes('?') ? '&' : '?';
-  return fetch(WORKER + path + sep + 't=' + encodeURIComponent(token), opts).then(r => {
-    if (r.status === 401) { logout(); throw new Error('unauthorized'); }
-    return r;
-  });
-}
-function logout() { localStorage.removeItem('memo_token'); token = ''; document.getElementById('auth-overlay').classList.remove('hidden'); }
 
 async function doAuth() {
   token = document.getElementById('auth-input').value.trim();
@@ -1715,9 +1705,6 @@ body{font-family:'Courier New',monospace;background:#f5f5f5;display:flex;align-i
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function autoGrow(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
-function safeJson(s, fb) { try { return typeof s === 'string' ? JSON.parse(s) : (s || fb); } catch { return fb; } }
-function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-function fmtDate(iso) { return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }); }
 function fmtSize(b) { if (b < 1024) return b + ' B'; if (b < 1048576) return (b / 1024).toFixed(1) + ' KB'; return (b / 1048576).toFixed(1) + ' MB'; }
 function fileIcon(name) {
   const e = ext(name);
