@@ -4,9 +4,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'index.html'
-      - 'favicon.svg'
-      - 'memo/**'
+      - 'src/**'
+      - 'static/**'
+      - 'svelte.config.js'
+      - 'vite.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
 
 jobs:
   deploy:
@@ -14,16 +17,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Prepare frontend files
-        run: |
-          mkdir dist
-          cp index.html dist/
-          cp favicon.svg dist/
-          cp -r memo dist/
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=memo-frontend --branch=main --commit-dirty=true
+          command: pages deploy .svelte-kit/cloudflare --project-name=memo-frontend --branch=main

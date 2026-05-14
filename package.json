@@ -1,8 +1,24 @@
 {
-  "name": "memo-worker",
+  "name": "memo-app",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
+  },
   "dependencies": {
     "hono": "^4"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-cloudflare": "^4",
+    "@sveltejs/kit": "^2",
+    "@sveltejs/vite-plugin-svelte": "^3",
+    "svelte": "^5",
+    "svelte-check": "^3",
+    "typescript": "^5",
+    "vite": "^5"
   }
 }
