@@ -36,6 +36,8 @@ export function logout(): void {
   tokenStore.clear()
 }
 
+export function getToken(): string { return _token }
+
 export function safeJson<T>(s: unknown, fallback: T): T {
   try { return typeof s === 'string' ? JSON.parse(s) : ((s as T) || fallback) } catch { return fallback }
 }
