@@ -365,8 +365,8 @@ app.post('/memos/:id/restore', async (c) => {
 })
 
 // Serve / delete a specific file — wildcard captures keys with slashes (e.g. folder/file.jpg)
-app.get('/memos/:id/files/*', async (c) => {
-  const obj = await c.env.MEMO_R2.get(pfx(c.req.param('id')) + c.req.param('*'))
+app.get('/memos/:id/files/:filename{.+}', async (c) => {
+  const obj = await c.env.MEMO_R2.get(pfx(c.req.param('id')) + c.req.param('filename'))
   if (!obj) return c.json({ error: 'not_found' }, 404)
   return new Response(obj.body, {
     headers: {
@@ -376,8 +376,8 @@ app.get('/memos/:id/files/*', async (c) => {
   })
 })
 
-app.delete('/memos/:id/files/*', async (c) => {
-  await c.env.MEMO_R2.delete(pfx(c.req.param('id')) + c.req.param('*'))
+app.delete('/memos/:id/files/:filename{.+}', async (c) => {
+  await c.env.MEMO_R2.delete(pfx(c.req.param('id')) + c.req.param('filename'))
   return c.json({ ok: true })
 })
 

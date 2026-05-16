@@ -130,8 +130,6 @@ function getVisibleFiles() {
 function renderFileList() {
   const list = document.getElementById('file-list'); if (!list) return
   list.innerHTML = ''
-  const _dbgImg = allFiles.find((f: any) => isImg(f.key))
-  if (_dbgImg) console.log('[memo-debug] memoId:', memoId, '| sample img URL:', fu(_dbgImg.key))
   const bc = document.getElementById('breadcrumb')
   if (bc) { bc.style.display = currentFolder ? '' : 'none'; const bn = document.getElementById('bc-folder-name'); if (bn) bn.textContent = currentFolder }
   const files = getVisibleFiles()
