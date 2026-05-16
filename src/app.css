@@ -12,6 +12,19 @@
   --danger-border:#fecaca;
   --success:#22c55e;
 }
+body.dark{
+  --bg:#111110;
+  --surface:#1c1c1a;
+  --border:#2c2c2a;
+  --text:#e7e5e4;
+  --muted:#78716c;
+  --accent:#818cf8;
+  --accent-hover:#6366f1;
+  --danger:#f87171;
+  --danger-light:#2d1515;
+  --danger-border:#7f1d1d;
+}
+body.dark .auth-box{background:#1c1c1a;color:#e7e5e4}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:64px}
 
 /* ── Dynamically-applied states (Svelte strips these if only set via JS) ── */
@@ -23,6 +36,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #lb-content img{max-width:90vw;max-height:85vh;object-fit:contain;border-radius:4px;display:block}
 #lb-content iframe{width:80vw;height:85vh;border:none;border-radius:4px;background:#fff;display:block}
 #lb-content video{max-width:90vw;max-height:85vh;border-radius:4px;display:block;background:#000}
+#lb-content audio{display:block;margin:auto}
 #note-editor ul,#note-editor ol{padding-left:20px}
 #note-editor input[type="checkbox"]{cursor:pointer;width:14px;height:14px;margin-right:4px;vertical-align:middle;accent-color:var(--accent)}
 #note-editor hr{border:none;border-top:2px dashed #d4d4d4;margin:14px 0;cursor:default}

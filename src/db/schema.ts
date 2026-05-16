@@ -14,6 +14,7 @@ export const memos = sqliteTable('memos', {
   deleted_at:  text('deleted_at'),
   created_at:  text('created_at').notNull(),
   updated_at:  text('updated_at').notNull(),
+  share_token: text('share_token'),
 })
 
 export type Memo = typeof memos.$inferSelect

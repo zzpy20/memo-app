@@ -29,18 +29,23 @@ let clipPasteArea: HTMLDivElement
 let uploadVisible = $state(false)
 let uploadPercent = $state(0)
 let uploadLabel = $state('')
+let shareToken = $state<string | null>(null)
+let shareOpen = $state(false)
+let shareLoading = $state(false)
 let _uploadXhrs: XMLHttpRequest[] = []
 const MAX_UPLOAD_MB = 100
 const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 
 const IMG_EXTS = new Set(['jpg','jpeg','png','gif','webp','heic','avif','bmp','svg','tiff'])
 const VIDEO_EXTS = new Set(['mp4','mov','webm','avi','mkv','m4v'])
+const AUDIO_EXTS = new Set(['mp3','m4a','wav','ogg','flac','aac','opus','wma'])
+const isAudio = (n: string) => AUDIO_EXTS.has(ext(n))
 const ext = (n: string) => (n.split('.').pop() || '').toLowerCase()
 const basename = (n: string) => n.split('/').pop() || n
 const isImg = (n: string) => IMG_EXTS.has(ext(n))
 const isVideo = (n: string) => VIDEO_EXTS.has(ext(n))
 const isPdf = (n: string) => ext(n) === 'pdf'
-const isPreviewable = (n: string) => isImg(n) || isPdf(n) || isVideo(n)
+const isPreviewable = (n: string) => isImg(n) || isVideo(n) || isPdf(n) || isAudio(n)
 const fu = (key: string) => apiFileUrl(memoId, key)
 const fmtSize = (b: number) => b < 1024 ? b + ' B' : b < 1048576 ? (b/1024).toFixed(1) + ' KB' : (b/1048576).toFixed(1) + ' MB'
 
@@ -165,7 +170,7 @@ function renderFileList() {
       const name = basename(f.key); const fm = meta.files[f.key] || {}
       const fp = f.key.includes('/') ? f.key.split('/').slice(0, -1).join('/') : ''
       const row = document.createElement('div'); row.className = 'file-row' + (selectedFiles.has(f.key) ? ' selected' : ''); row.dataset.key = f.key
-      const th = isImg(f.key) ? `<img class="file-row-thumb" src="${fu(f.key)}" loading="lazy" alt="" data-preview="1" onclick="openLightbox('${esc(f.key)}')" onerror="this.outerHTML='<div class=\\'file-row-icon\\'>${fileIcon(f.key)}</div>'">` : isVideo(f.key) ? `<div class="file-row-thumb video-row-thumb" onclick="openLightbox('${esc(f.key)}')">▶</div>` : `<div class="file-row-icon">${fileIcon(f.key)}</div>`
+      const th = isImg(f.key) ? `<img class="file-row-thumb" src="${fu(f.key)}" loading="lazy" alt="" data-preview="1" onclick="openLightbox('${esc(f.key)}')" onerror="this.outerHTML='<div class=\\'file-row-icon\\'>${fileIcon(f.key)}</div>'">` : isVideo(f.key) ? `<div class="file-row-thumb video-row-thumb" onclick="openLightbox('${esc(f.key)}')">▶</div>` : isAudio(f.key) ? `<div class="file-row-thumb video-row-thumb" onclick="openLightbox('${esc(f.key)}')">♪</div>` : `<div class="file-row-icon">${fileIcon(f.key)}</div>`
       row.innerHTML = `<div class="file-cb" onclick="toggleSelect('${esc(f.key)}')">✓</div>${th}<div class="file-row-info"><div class="file-row-name" title="${esc(name)}">${esc(name)}</div><div class="file-row-meta">${fp ? esc(fp) + ' · ' : ''}${fmtSize(f.size)} · ${fmtDate(f.uploaded)}${fm.caption ? ` · <em>${esc(fm.caption)}</em>` : ''}${fm.tags?.length ? ` · <span style="color:var(--accent)">Tags: ${(fm.tags as string[]).map(t => esc(t)).join(', ')}</span>` : ''}</div></div><div class="file-row-actions"><button onclick="showMoveMenu(event,'${esc(f.key)}')">Move ▾</button><button onclick="openFileInfo('${esc(f.key)}')">ⓘ</button>${isPreviewable(f.key) ? `<button onclick="openLightbox('${esc(f.key)}')">View</button>` : `<button onclick="downloadFile('${esc(f.key)}')">↓</button>`}<button class="del-btn" onclick="trashFile('${esc(f.key)}')">🗑</button></div>`
       addFileDrag(row, f.key); list.appendChild(row)
     })
@@ -318,6 +323,7 @@ function showBulkMoveMenu(e: Event) {
 
 function showFileMenu(e: Event, key: string) {
   showFloatMenu(e, [
+    { label: 'Rename', fn: `renameFile('${esc(key)}')` },
     { label: 'View / Preview', fn: `openLightbox('${esc(key)}')` },
     { label: 'File info', fn: `openFileInfo('${esc(key)}')` },
     { label: 'Move to…', fn: `showMoveMenu(event,'${esc(key)}')` },
@@ -339,6 +345,17 @@ async function moveFile(srcKey: string, dstFolder: string) {
     const { key: newKey } = await r.json()
     if (meta.files[srcKey]) { meta.files[newKey] = meta.files[srcKey]; delete meta.files[srcKey] }
     if (memo?.cover_file === srcKey) { memo.cover_file = newKey; await saveInfo() }
+    await saveMeta(); await loadFiles()
+  } catch {}
+}
+
+async function renameFile(key: string) {
+  const newName = prompt('Rename file:', basename(key))
+  if (!newName || newName === basename(key)) return
+  try {
+    const r = await api('/memos/' + memoId + '/rename', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ srcKey: key, newName }) })
+    const { dstKey } = await r.json()
+    if (meta.files[key]) { meta.files[dstKey] = meta.files[key]; delete meta.files[key] }
     await saveMeta(); await loadFiles()
   } catch {}
 }
@@ -534,8 +551,8 @@ function openLightbox(key: string) {
 function showLightbox() {
   const f = lbFiles[lbIdx]; if (!f) return
   document.getElementById('lightbox')?.classList.remove('hidden'); document.body.style.overflow = 'hidden'
-  const c = document.getElementById('lb-content')!; const prev = c.querySelector('video') as HTMLVideoElement | null; if (prev) { prev.pause(); prev.src = '' }
-  c.innerHTML = isVideo(f.key) ? `<video src="${fu(f.key)}" controls autoplay playsinline></video>` : isPdf(f.key) ? `<iframe src="${fu(f.key)}"></iframe>` : `<img src="${fu(f.key)}" alt="${esc(basename(f.key))}">`
+  const c = document.getElementById('lb-content')!; const prev = c.querySelector('video,audio') as HTMLMediaElement | null; if (prev) { prev.pause(); prev.src = '' }
+  c.innerHTML = isVideo(f.key) ? `<video src="${fu(f.key)}" controls autoplay playsinline></video>` : isAudio(f.key) ? `<audio src="${fu(f.key)}" controls autoplay style="width:min(400px,80vw);outline:none"></audio>` : isPdf(f.key) ? `<iframe src="${fu(f.key)}"></iframe>` : `<img src="${fu(f.key)}" alt="${esc(basename(f.key))}">`
   const cap = document.getElementById('lb-caption'); if (cap) cap.textContent = basename(f.key)
   const ctr = document.getElementById('lb-counter'); if (ctr) ctr.textContent = lbFiles.length > 1 ? `${lbIdx + 1} / ${lbFiles.length}` : ''
   const multi = lbFiles.length > 1
@@ -544,7 +561,7 @@ function showLightbox() {
 }
 
 function closeLightbox() {
-  const c = document.getElementById('lb-content'); if (c) { const v = c.querySelector('video') as HTMLVideoElement | null; if (v) { v.pause(); v.src = '' }; c.innerHTML = '' }
+  const c = document.getElementById('lb-content'); if (c) { const v = c.querySelector('video,audio') as HTMLMediaElement | null; if (v) { v.pause(); v.src = '' }; c.innerHTML = '' }
   document.getElementById('lightbox')?.classList.add('hidden'); document.body.style.overflow = ''
 }
 
@@ -582,6 +599,32 @@ async function saveNote() {
   const html = noteEditor.innerHTML; const st = document.getElementById('note-status'); if (st) st.textContent = 'Saving…'
   try { await api('/memos/' + memoId + '/note', { method: 'PUT', headers: { 'Content-Type': 'text/plain' }, body: html }); if (st) st.textContent = 'Saved ✓' }
   catch { if (st) st.textContent = 'Error' }
+}
+
+async function openShare() {
+  shareOpen = true
+  if (shareToken === null) {
+    shareLoading = true
+    try { const d = await (await api('/memos/' + memoId + '/share')).json(); shareToken = d.token } catch {}
+    shareLoading = false
+  }
+}
+
+async function generateShareLink() {
+  shareLoading = true
+  try { const d = await (await api('/memos/' + memoId + '/share', { method: 'POST' })).json(); shareToken = d.token } catch {}
+  shareLoading = false
+}
+
+async function revokeShare() {
+  if (!confirm('Revoke this share link? Anyone with the link will lose access.')) return
+  try { await api('/memos/' + memoId + '/share', { method: 'DELETE' }); shareToken = null } catch {}
+}
+
+function copyShareLink() {
+  if (!shareToken) return
+  const url = window.location.origin + '/share?token=' + shareToken
+  navigator.clipboard.writeText(url)
 }
 
 async function copyLink() {
@@ -795,6 +838,25 @@ onMount(() => {
     removeTag, selectTagSug, removeLink,
     moveFile, bulkMoveTo, applyBlockStyle, applyHighlight,
     renameFolder, removeFolder, setNoteImgSize, openFolderPicker,
+    renameFile,
+  })
+
+  document.addEventListener('keydown', (e: KeyboardEvent) => {
+    const tag = (e.target as HTMLElement).tagName
+    const inEditable = ['INPUT','TEXTAREA','SELECT'].includes(tag) || (e.target as HTMLElement).isContentEditable
+    const lbOpen = !document.getElementById('lightbox')?.classList.contains('hidden')
+    if (e.key === 'Escape') {
+      if (lbOpen) { closeLightbox(); return }
+      if (!document.getElementById('info-modal')?.classList.contains('hidden')) { closeModal(); return }
+      if (!document.getElementById('trash-modal')?.classList.contains('hidden')) { closeTrashModal(); return }
+    }
+    if (lbOpen) {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); lbNav(-1) }
+      if (e.key === 'ArrowRight') { e.preventDefault(); lbNav(1) }
+    }
+    if (inEditable && (e.metaKey || e.ctrlKey) && e.key === 's') {
+      e.preventDefault(); saveNote()
+    }
   })
 
   const dropZone = document.getElementById('drop-zone')!
@@ -803,7 +865,7 @@ onMount(() => {
   dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'))
   dropZone.addEventListener('drop', async (e: DragEvent) => { e.preventDefault(); dropZone.classList.remove('drag-over'); await uploadFiles(Array.from(e.dataTransfer!.files) as File[]) })
 
-  document.addEventListener('click', () => { const m = document.getElementById('float-menu'); if (m) m.style.display = 'none' })
+  document.addEventListener('click', (e: MouseEvent) => { const m = document.getElementById('float-menu'); if (m) m.style.display = 'none'; if (shareOpen && !(e.target as HTMLElement).closest('.share-popup') && !(e.target as HTMLElement).closest('[title="Share"]')) shareOpen = false })
 
   const gsInput = document.getElementById('gsearch') as HTMLInputElement
   const gsDrop = document.getElementById('gsearch-drop')!
@@ -893,6 +955,28 @@ onMount(() => {
   <button class="btn-icon" data-tip="Export note" onclick={exportNote}>↓</button>
   <button class="btn-icon" data-tip="Print label" onclick={printLabel}>🏷</button>
   <button class="btn-icon" data-tip="Move to trash" onclick={trashMemo}>🗑</button>
+  <div style="position:relative">
+    <button class="header-btn" onclick={openShare} title="Share">↗ Share</button>
+    {#if shareOpen}
+    <div class="share-popup">
+      <button class="share-popup-close" onclick={() => shareOpen = false}>✕</button>
+      <div class="share-popup-title">Share memo</div>
+      {#if shareLoading}
+        <div class="share-popup-info">Loading…</div>
+      {:else if shareToken}
+        <div class="share-popup-info">Anyone with this link can view (read-only)</div>
+        <input class="share-popup-url" readonly value={window.location.origin + '/share?token=' + shareToken}>
+        <div class="share-popup-actions">
+          <button class="share-popup-btn" onclick={copyShareLink}>Copy link</button>
+          <button class="share-popup-btn danger" onclick={revokeShare}>Revoke</button>
+        </div>
+      {:else}
+        <div class="share-popup-info">Generate a read-only link to share this memo</div>
+        <button class="share-popup-btn" onclick={generateShareLink}>Generate link</button>
+      {/if}
+    </div>
+    {/if}
+  </div>
   <button id="signout-btn" onclick={logout}>Sign out</button>
 </div>
 
@@ -1168,6 +1252,19 @@ onMount(() => {
 .btn-icon[data-tip]:hover::after{opacity:1}
 #signout-btn{background:none;border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:.78rem;cursor:pointer;color:var(--muted);font-family:inherit;flex-shrink:0}
 #signout-btn:hover{border-color:var(--text);color:var(--text)}
+.header-btn{background:none;border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:.78rem;cursor:pointer;color:var(--muted);font-family:inherit;flex-shrink:0}
+.header-btn:hover{border-color:var(--accent);color:var(--accent)}
+.share-popup{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;width:300px;box-shadow:0 8px 24px rgba(0,0,0,.14);z-index:600}
+.share-popup-close{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:.85rem;padding:2px 6px;border-radius:4px}
+.share-popup-close:hover{color:var(--text)}
+.share-popup-title{font-size:.9rem;font-weight:600;margin-bottom:8px}
+.share-popup-info{font-size:.8rem;color:var(--muted);margin-bottom:10px}
+.share-popup-url{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;font-family:'DM Mono',monospace;color:var(--text);background:var(--bg);margin-bottom:8px;box-sizing:border-box}
+.share-popup-actions{display:flex;gap:6px}
+.share-popup-btn{padding:6px 14px;border-radius:7px;border:1px solid var(--border);background:transparent;font-size:.82rem;font-family:inherit;cursor:pointer;color:var(--text)}
+.share-popup-btn:hover{border-color:var(--accent);color:var(--accent)}
+.share-popup-btn.danger{color:var(--danger);border-color:var(--danger-border)}
+.share-popup-btn.danger:hover{background:var(--danger-light)}
 .title-section{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px 14px}
 #title-input{width:100%;border:none;outline:none;font-size:1.5rem;font-weight:600;font-family:inherit;color:var(--text);background:transparent;margin-bottom:6px;display:block}
 #title-input::placeholder{color:#d4d4d4;font-weight:400}

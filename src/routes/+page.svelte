@@ -41,11 +41,17 @@
   let tlTooltipVisible = $state(false)
   let rebuildLabel = $state('⟳ Reindex')
   let rebuildDisabled = $state(false)
+  let storageText = $state('')
 
   onMount(() => {
     loadTags()
     loadMemos()
     updateTrashCount()
+    api('/storage').then((r: Response) => r.json()).then((d: any) => {
+      const gb = d.bytes / 1024 / 1024 / 1024
+      storageText = gb < 0.01 ? `${Math.round(d.bytes / 1024 / 1024)} MB` : `${gb.toFixed(2)} GB`
+      storageText += ' / 10 GB'
+    }).catch(() => {})
 
     const scrollHandler = () => updateThumb()
     window.addEventListener('scroll', scrollHandler, { passive: true })
@@ -336,6 +342,7 @@
     🗑 {#if trashCount}<span class="trash-count">{trashCount}</span>{/if}
   </button>
   {#if !inTrash}<button class="new-btn" onclick={newMemo}>+ New Memo</button>{/if}
+  {#if storageText}<span class="storage-label">{storageText}</span>{/if}
   <button class="signout-btn" onclick={logout}>Sign out</button>
 </header>
 
@@ -471,6 +478,7 @@
   .trash-count{background:var(--danger);color:#fff;font-size:.65rem;font-weight:700;border-radius:10px;padding:1px 5px;line-height:1.4}
   .signout-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:.82rem;cursor:pointer;color:var(--muted);flex-shrink:0;font-family:inherit}
   .signout-btn:hover{border-color:var(--text);color:var(--text)}
+  .storage-label{font-size:.75rem;color:var(--muted);white-space:nowrap}
   .sort-select{border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:.82rem;font-family:inherit;background:var(--surface);color:var(--muted);cursor:pointer;flex-shrink:0}
   .sort-select:focus{outline:none;border-color:var(--accent)}
 

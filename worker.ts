@@ -100,6 +100,7 @@ app.use('*', cors({
 }))
 
 app.use('*', async (c, next) => {
+  if (c.req.path.startsWith('/share/') || c.req.path === '/share') { await next(); return }
   const token = c.req.query('t') || ''
   const tokenOk = !!c.env.MEMO_AUTH_TOKEN && token === c.env.MEMO_AUTH_TOKEN
   if (c.req.query('check') === '1') {
@@ -107,6 +108,90 @@ app.use('*', async (c, next) => {
   }
   if (!tokenOk) return c.json({ error: 'unauthorized' }, 401)
   await next()
+})
+
+// ── Public share routes (no auth) ─────────────────────────────────────────────
+app.get('/share/:token', async (c) => {
+  const db = drizzle(c.env.MEMO_D1)
+  const [row] = await db.select({
+    id: memos.id, memo_id: memos.memo_id, title: memos.title,
+    description: memos.description, tags: memos.tags, uid: memos.uid,
+    cover_file: memos.cover_file, created_at: memos.created_at, updated_at: memos.updated_at,
+  }).from(memos).where(and(eq(memos.share_token, c.req.param('token')), notDeleted)).limit(1)
+  if (!row) return c.json({ error: 'not_found' }, 404)
+  return c.json(row)
+})
+
+app.get('/share/:token/note', async (c) => {
+  const db = drizzle(c.env.MEMO_D1)
+  const [row] = await db.select({ id: memos.id }).from(memos)
+    .where(and(eq(memos.share_token, c.req.param('token')), notDeleted)).limit(1)
+  if (!row) return c.json({ error: 'not_found' }, 404)
+  const obj = await c.env.MEMO_R2.get(pfx(row.id) + '_note')
+  return new Response(obj?.body ?? '', { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
+})
+
+app.get('/share/:token/files', async (c) => {
+  const db = drizzle(c.env.MEMO_D1)
+  const [row] = await db.select({ id: memos.id }).from(memos)
+    .where(and(eq(memos.share_token, c.req.param('token')), notDeleted)).limit(1)
+  if (!row) return c.json({ error: 'not_found' }, 404)
+  const p = pfx(row.id)
+  const listed = await c.env.MEMO_R2.list({ prefix: p, limit: 1000 })
+  const files = listed.objects
+    .map(o => ({ key: o.key.slice(p.length), size: o.size, uploaded: o.uploaded }))
+    .filter(f => f.key && !f.key.startsWith('_'))
+  return c.json(files)
+})
+
+app.get('/share/:token/files/:filename{.+}', async (c) => {
+  const db = drizzle(c.env.MEMO_D1)
+  const [row] = await db.select({ id: memos.id }).from(memos)
+    .where(and(eq(memos.share_token, c.req.param('token')), notDeleted)).limit(1)
+  if (!row) return c.json({ error: 'not_found' }, 404)
+  const obj = await c.env.MEMO_R2.get(pfx(row.id) + c.req.param('filename'))
+  if (!obj) return c.json({ error: 'not_found' }, 404)
+  return new Response(obj.body, {
+    headers: {
+      'Content-Type': obj.httpMetadata?.contentType || 'application/octet-stream',
+      'Cache-Control': 'public, max-age=3600',
+    },
+  })
+})
+
+// ── Share management (auth required) ──────────────────────────────────────────
+app.get('/memos/:id/share', async (c) => {
+  const db = drizzle(c.env.MEMO_D1)
+  const [row] = await db.select({ share_token: memos.share_token }).from(memos).where(eq(memos.id, c.req.param('id'))).limit(1)
+  return c.json({ token: row?.share_token ?? null })
+})
+
+app.post('/memos/:id/share', async (c) => {
+  const db = drizzle(c.env.MEMO_D1)
+  const id = c.req.param('id')
+  const token = crypto.randomUUID()
+  await db.update(memos).set({ share_token: token }).where(eq(memos.id, id))
+  return c.json({ token })
+})
+
+app.delete('/memos/:id/share', async (c) => {
+  const db = drizzle(c.env.MEMO_D1)
+  await db.update(memos).set({ share_token: null }).where(eq(memos.id, c.req.param('id')))
+  return c.json({ ok: true })
+})
+
+// ── Storage usage ─────────────────────────────────────────────────────────────
+
+app.get('/storage', async (c) => {
+  let cursor: string | undefined
+  let totalBytes = 0
+  let objectCount = 0
+  do {
+    const listed = await c.env.MEMO_R2.list({ limit: 1000, cursor })
+    for (const obj of listed.objects) { totalBytes += obj.size; objectCount++ }
+    cursor = listed.truncated ? listed.cursor : undefined
+  } while (cursor)
+  return c.json({ bytes: totalBytes, objects: objectCount })
 })
 
 // ── Search ────────────────────────────────────────────────────────────────────
@@ -381,6 +466,21 @@ app.post('/memos/:id/move', async (c) => {
   await c.env.MEMO_R2.put(pfx(id) + dstKey, obj.body, { httpMetadata: obj.httpMetadata })
   await c.env.MEMO_R2.delete(pfx(id) + srcKey)
   return c.json({ ok: true, key: dstKey })
+})
+
+app.post('/memos/:id/rename', async (c) => {
+  const id = c.req.param('id')
+  const { srcKey, newName }: { srcKey: string; newName: string } = await c.req.json()
+  if (!srcKey || !newName) return c.json({ error: 'invalid' }, 400)
+  const folder = srcKey.includes('/') ? srcKey.split('/').slice(0, -1).join('/') : ''
+  const safeName = newName.replace(/\//g, '_')
+  const dstKey = folder ? folder + '/' + safeName : safeName
+  if (srcKey === dstKey) return c.json({ ok: true, dstKey })
+  const obj = await c.env.MEMO_R2.get(pfx(id) + srcKey)
+  if (!obj) return c.json({ error: 'not_found' }, 404)
+  await c.env.MEMO_R2.put(pfx(id) + dstKey, obj.body, { httpMetadata: obj.httpMetadata })
+  await c.env.MEMO_R2.delete(pfx(id) + srcKey)
+  return c.json({ ok: true, dstKey })
 })
 
 app.post('/memos/:id/trash', async (c) => {

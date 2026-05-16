@@ -7,8 +7,14 @@
   let authed = $state(false)
   let authInput = $state('')
   let authError = $state('')
+  let darkMode = $state(false)
 
   onMount(async () => {
+    darkMode = localStorage.getItem('dark') === '1'
+    if (darkMode) document.body.classList.add('dark')
+
+    if (window.location.pathname.startsWith('/share')) { authed = true; return }
+
     const t = $tokenStore
     if (t) {
       const r = await fetch(`${WORKER}?check=1&t=${encodeURIComponent(t)}`).catch(() => null)
@@ -19,6 +25,12 @@
   $effect(() => {
     if ($tokenStore === '') authed = false
   })
+
+  function toggleDark() {
+    darkMode = !darkMode
+    document.body.classList.toggle('dark', darkMode)
+    localStorage.setItem('dark', darkMode ? '1' : '0')
+  }
 
   async function doAuth() {
     authError = ''
@@ -55,6 +67,7 @@
 {:else}
 {@render children()}
 {/if}
+<button class="dark-btn" onclick={toggleDark} title={darkMode ? 'Light mode' : 'Dark mode'}>{darkMode ? '☀' : '🌙'}</button>
 
 <style>
   #auth-overlay{position:fixed;inset:0;background:#1c1917;display:flex;align-items:center;justify-content:center;z-index:1000}
@@ -68,4 +81,6 @@
   @media (max-width:640px){
     .auth-box{width:calc(100vw - 48px);padding:32px 24px}
   }
+  .dark-btn{position:fixed;bottom:16px;right:16px;background:var(--surface);border:1px solid var(--border);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+  .dark-btn:hover{border-color:var(--accent)}
 </style>
