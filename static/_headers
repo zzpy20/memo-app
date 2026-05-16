@@ -1,0 +1,7 @@
+# SvelteKit immutable assets are content-hashed — safe to cache forever
+/_app/immutable/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# HTML pages and everything else — always revalidate so users get new deploys instantly
+/*
+  Cache-Control: no-cache
