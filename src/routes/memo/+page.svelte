@@ -1297,7 +1297,7 @@ onDestroy(() => {
 .tb-color-wrap{position:relative;display:inline-flex;cursor:pointer}
 .tb-color-wrap input[type=color]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0}
 .tb-color-preview{padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;font-weight:700;pointer-events:none;line-height:1.5}
-#note-editor{min-height:140px;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:.9rem;line-height:1.6;outline:none}
+#note-editor{min-height:140px;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:.9rem;line-height:1.6;outline:none;background:var(--surface);color:var(--text)}
 #note-editor:focus{border-color:var(--accent)}
 .note-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
 #note-status{font-size:.78rem;color:var(--muted)}
