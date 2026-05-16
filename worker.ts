@@ -254,7 +254,7 @@ app.delete('/memos/:id', async (c) => {
   if (c.req.query('permanent') === '1') {
     const p = pfx(id)
     const listed = await c.env.MEMO_R2.list({ prefix: p, limit: 1000 })
-    for (const obj of listed.objects) await c.env.MEMO_R2.delete(obj.key)
+    await Promise.all(listed.objects.map(obj => c.env.MEMO_R2.delete(obj.key)))
     await db.delete(memos).where(eq(memos.id, id))
   } else {
     await db.update(memos).set({ deleted_at: nowISO() }).where(eq(memos.id, id))
@@ -287,11 +287,11 @@ app.post('/memos/:id/duplicate', async (c) => {
     updated_at: ts,
   })
   const listed = await c.env.MEMO_R2.list({ prefix: pfx(srcId), limit: 1000 })
-  for (const obj of listed.objects) {
+  await Promise.all(listed.objects.map(async obj => {
     const relKey = obj.key.slice(pfx(srcId).length)
     const r2obj = await c.env.MEMO_R2.get(obj.key)
     if (r2obj) await c.env.MEMO_R2.put(pfx(newId_) + relKey, r2obj.body, { httpMetadata: r2obj.httpMetadata })
-  }
+  }))
   return c.json({ id: newId_, memo_id: newMemoId_ })
 })
 

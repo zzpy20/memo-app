@@ -29,6 +29,9 @@ let clipPasteArea: HTMLDivElement
 let uploadVisible = $state(false)
 let uploadPercent = $state(0)
 let uploadLabel = $state('')
+let _uploadXhrs: XMLHttpRequest[] = []
+const MAX_UPLOAD_MB = 100
+const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 
 const IMG_EXTS = new Set(['jpg','jpeg','png','gif','webp','heic','avif','bmp','svg','tiff'])
 const VIDEO_EXTS = new Set(['mp4','mov','webm','avi','mkv','m4v'])
@@ -341,13 +344,13 @@ async function moveFile(srcKey: string, dstFolder: string) {
 }
 
 async function bulkMoveTo(folder: string) {
-  for (const key of [...selectedFiles]) {
+  await Promise.all([...selectedFiles].map(async key => {
     try {
       const r = await api('/memos/' + memoId + '/move', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ srcKey: key, dstFolder: folder }) })
       const { key: newKey } = await r.json()
       if (meta.files[key]) { meta.files[newKey] = meta.files[key]; delete meta.files[key] }
     } catch {}
-  }
+  }))
   selectedFiles.clear(); await saveMeta(); await loadFiles()
 }
 
@@ -359,29 +362,59 @@ function openFilePicker() {
   input.click()
 }
 
-async function uploadFiles(files: File[]) {
-  if (!files.length) return
-  uploadVisible = true
-  await tick() // flush before XHR so the bar is in the DOM
-  const errors: string[] = []
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i]
-    uploadLabel = files.length > 1 ? `${file.name} (${i + 1} of ${files.length})` : file.name
-    uploadPercent = 0
-    const ok = await new Promise<boolean>(resolve => {
-      const fd = new FormData(); fd.append('file', file)
-      if (currentFolder) fd.append('folder', currentFolder)
-      const xhr = new XMLHttpRequest()
-      xhr.open('POST', WORKER + '/memos/' + memoId + '/files?t=' + encodeURIComponent(getToken()))
-      xhr.upload.onprogress = e => { if (e.lengthComputable) uploadPercent = e.loaded / e.total * 100 }
-      xhr.onload = () => { if (xhr.status === 401) { logout(); resolve(false) } else if (xhr.status >= 400) { resolve(false) } else { uploadPercent = 100; resolve(true) } }
-      xhr.onerror = () => resolve(false); xhr.send(fd)
-    })
-    if (!ok) errors.push(file.name)
-  }
+function cancelUpload() {
+  _uploadXhrs.forEach(xhr => xhr.abort())
+  _uploadXhrs = []
   uploadVisible = false
   uploadPercent = 0
-  if (errors.length) alert(`Failed to upload: ${errors.join(', ')}`)
+  uploadLabel = ''
+}
+
+async function uploadFiles(files: File[]) {
+  if (!files.length) return
+  const oversized = files.filter(f => f.size > MAX_UPLOAD_BYTES)
+  const toUpload = files.filter(f => f.size <= MAX_UPLOAD_BYTES)
+  if (oversized.length) alert(`Skipped — over ${MAX_UPLOAD_MB}MB limit:\n${oversized.map(f => f.name).join('\n')}`)
+  if (!toUpload.length) return
+
+  uploadVisible = true
+  _uploadXhrs = []
+  await tick()
+
+  const n = toUpload.length
+  const progresses = new Array(n).fill(0)
+  uploadLabel = n === 1 ? toUpload[0].name : `${n} files`
+  uploadPercent = 0
+  const errors: string[] = []
+
+  await Promise.all(toUpload.map((file, i) => new Promise<void>(resolve => {
+    const fd = new FormData(); fd.append('file', file)
+    if (currentFolder) fd.append('folder', currentFolder)
+    const xhr = new XMLHttpRequest()
+    _uploadXhrs.push(xhr)
+    xhr.open('POST', WORKER + '/memos/' + memoId + '/files?t=' + encodeURIComponent(getToken()))
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) {
+        progresses[i] = e.loaded / e.total
+        uploadPercent = progresses.reduce((a, b) => a + b, 0) / n * 100
+      }
+    }
+    xhr.onload = () => {
+      if (xhr.status === 401) logout()
+      else if (xhr.status >= 400) errors.push(file.name)
+      progresses[i] = 1
+      uploadPercent = progresses.reduce((a, b) => a + b, 0) / n * 100
+      resolve()
+    }
+    xhr.onerror = () => { errors.push(file.name); resolve() }
+    xhr.onabort = () => resolve()
+    xhr.send(fd)
+  })))
+
+  uploadVisible = false
+  uploadPercent = 0
+  _uploadXhrs = []
+  if (errors.length) alert(`Failed to upload:\n${errors.join('\n')}`)
   await loadFiles()
 }
 
@@ -398,26 +431,26 @@ async function trashFile(key: string) {
 async function bulkTrash() {
   const keys = [...selectedFiles]; if (!keys.length) return
   if (!confirm(`Move ${keys.length} file${keys.length > 1 ? 's' : ''} to trash?`)) return
-  for (const key of keys) {
+  await Promise.all(keys.map(async key => {
     try {
       const r = await api('/memos/' + memoId + '/trash', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) })
       const { trashKey } = await r.json()
       meta.trash.push({ trashKey, origKey: key, name: basename(key), deletedAt: new Date().toISOString() }); delete meta.files[key]
     } catch {}
-  }
+  }))
   selectedFiles.clear(); await saveMeta(); await loadFiles(); renderTrashCount()
 }
 
 async function clearAll() {
   const files = getVisibleFiles(); if (!files.length) return
   if (!confirm(`Move all ${files.length} visible files to trash?`)) return
-  for (const f of files) {
+  await Promise.all(files.map(async (f: any) => {
     try {
       const r = await api('/memos/' + memoId + '/trash', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: f.key }) })
       const { trashKey } = await r.json()
       meta.trash.push({ trashKey, origKey: f.key, name: basename(f.key), deletedAt: new Date().toISOString() }); delete meta.files[f.key]
     } catch {}
-  }
+  }))
   await saveMeta(); await loadFiles(); renderTrashCount()
 }
 
@@ -964,7 +997,10 @@ onMount(() => {
     <div class="drop-zone-text" id="drop-zone-text">Drop files here · or <b>click to browse</b></div>
     {#if uploadVisible}
     <div id="upload-progress">
-      <div id="upload-bar"><div id="upload-bar-fill" style="width:{uploadPercent}%"></div></div>
+      <div id="upload-bar-row">
+        <div id="upload-bar"><div id="upload-bar-fill" style="width:{uploadPercent}%"></div></div>
+        <button id="upload-cancel" onclick={cancelUpload} title="Cancel">✕</button>
+      </div>
       <div id="upload-bar-text">{uploadLabel}</div>
     </div>
     {/if}
@@ -1197,8 +1233,11 @@ onMount(() => {
 .drop-zone-text{font-size:.82rem;color:var(--muted)}
 .drop-zone-text b{color:var(--accent);font-weight:500}
 #upload-progress{margin:8px 0 0}
-#upload-bar{height:4px;background:#e2e8f0;border-radius:2px;overflow:hidden}
-#upload-bar-fill{height:100%;background:var(--accent);width:0%;transition:width .15s}
+#upload-bar-row{display:flex;align-items:center;gap:6px}
+#upload-bar{flex:1;height:4px;background:#e2e8f0;border-radius:2px;overflow:hidden}
+#upload-bar-fill{height:100%;background:var(--accent);width:0%;transition:width .1s}
+#upload-cancel{background:none;border:none;cursor:pointer;color:var(--muted);font-size:.7rem;padding:0 2px;line-height:1;flex-shrink:0}
+#upload-cancel:hover{color:var(--danger)}
 #upload-bar-text{font-size:.72rem;color:var(--muted);margin-top:3px}
 .fb-toolbar{border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .fb-left{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
