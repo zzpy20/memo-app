@@ -999,7 +999,7 @@ onMount(() => {
     <div id="upload-progress">
       <div id="upload-bar-row">
         <div id="upload-bar"><div id="upload-bar-fill" style="width:{uploadPercent}%"></div></div>
-        <button id="upload-cancel" onclick={cancelUpload} title="Cancel">✕</button>
+        <button id="upload-cancel" onclick={(e) => { e.stopPropagation(); cancelUpload() }} title="Cancel">✕</button>
       </div>
       <div id="upload-bar-text">{uploadLabel}</div>
     </div>
