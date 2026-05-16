@@ -614,10 +614,14 @@ async function revokeShare() {
   try { await api('/memos/' + memoId + '/share', { method: 'DELETE' }); shareToken = null } catch {}
 }
 
+let shareCopied = $state(false)
+
 function copyShareLink() {
   if (!shareToken) return
   const url = window.location.origin + '/share?token=' + shareToken
   navigator.clipboard.writeText(url)
+  shareCopied = true
+  setTimeout(() => { shareCopied = false }, 2000)
 }
 
 async function copyLink() {
@@ -965,7 +969,7 @@ onDestroy(() => {
         <div class="share-popup-info">Anyone with this link can view (read-only)</div>
         <input class="share-popup-url" readonly value={window.location.origin + '/share?token=' + shareToken}>
         <div class="share-popup-actions">
-          <button class="share-popup-btn" onclick={copyShareLink}>Copy link</button>
+          <button class="share-popup-btn" class:copied={shareCopied} onclick={copyShareLink}>{shareCopied ? '✓ Copied!' : 'Copy link'}</button>
           <button class="share-popup-btn danger" onclick={revokeShare}>Revoke</button>
         </div>
       {:else}
@@ -1261,6 +1265,7 @@ onDestroy(() => {
 .share-popup-actions{display:flex;gap:6px}
 .share-popup-btn{padding:6px 14px;border-radius:7px;border:1px solid var(--border);background:transparent;font-size:.82rem;font-family:inherit;cursor:pointer;color:var(--text)}
 .share-popup-btn:hover{border-color:var(--accent);color:var(--accent)}
+.share-popup-btn.copied{border-color:var(--success);color:var(--success);pointer-events:none}
 .share-popup-btn.danger{color:var(--danger);border-color:var(--danger-border)}
 .share-popup-btn.danger:hover{background:var(--danger-light)}
 .title-section{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px 14px}
