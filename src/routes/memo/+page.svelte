@@ -155,7 +155,7 @@ function renderFileList() {
     files.forEach((f: any) => {
       const name = basename(f.key); const card = document.createElement('div')
       card.className = 'file-grid-card' + (selectedFiles.has(f.key) ? ' selected' : ''); card.dataset.key = f.key
-      const th = isImg(f.key) ? `<img src="${fu(f.key)}" loading="lazy" alt="" data-preview="1" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\\'grid-icon\\'>${fileIcon(f.key)}</div>'">` : isVideo(f.key) ? `<div class="video-grid-preview">▶</div>` : `<div class="grid-icon">${fileIcon(f.key)}</div>`
+      const th = isImg(f.key) ? `<img src="${fu(f.key)}" loading="lazy" alt="" data-preview="1" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\\'grid-icon\\'>${fileIcon(f.key)}</div>'">` : isVideo(f.key) ? `<div class="video-grid-preview">▶</div>` : isAudio(f.key) ? `<div class="video-grid-preview">♪</div>` : `<div class="grid-icon">${fileIcon(f.key)}</div>`
       card.innerHTML = `<div class="grid-cb" onclick="toggleSelect('${esc(f.key)}');event.stopPropagation()">✓</div><div class="grid-thumb" onclick="${isPreviewable(f.key) ? `openLightbox('${esc(f.key)}')` : `downloadFile('${esc(f.key)}')`}">${th}</div><div class="grid-info"><div class="grid-name" title="${esc(f.key)}">${esc(name)}</div><div class="grid-meta">${fmtSize(f.size)}</div></div><button class="grid-menu-btn" onclick="showFileMenu(event,'${esc(f.key)}')">⋯</button>`
       addFileDrag(card, f.key); list.appendChild(card)
     })
@@ -359,22 +359,27 @@ async function bulkMoveTo(folder: string) {
   selectedFiles.clear(); await saveMeta(); await loadFiles()
 }
 
-function openFilePicker() {
-  const input = document.createElement('input'); input.type = 'file'; input.multiple = true
+let _pickerActive = false
+
+function _openPicker(folder: boolean) {
+  if (_pickerActive) return
+  _pickerActive = true
+  const input = document.createElement('input'); input.type = 'file'
+  if (folder) (input as any).webkitdirectory = true; else input.multiple = true
   input.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0'
   document.body.appendChild(input)
-  input.addEventListener('change', async () => { const files = Array.from(input.files || []); input.remove(); await uploadFiles(files as File[]) })
+  const done = async (files: File[] = []) => {
+    if (document.body.contains(input)) input.remove()
+    setTimeout(() => { _pickerActive = false }, 200)
+    if (files.length) await uploadFiles(files)
+  }
+  input.addEventListener('change', () => done(Array.from(input.files || []) as File[]))
+  input.addEventListener('cancel', () => done())
   input.click()
 }
 
-function openFolderPicker() {
-  const input = document.createElement('input'); input.type = 'file'
-  ;(input as any).webkitdirectory = true
-  input.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0'
-  document.body.appendChild(input)
-  input.addEventListener('change', async () => { const files = Array.from(input.files || []); input.remove(); await uploadFiles(files as File[]) })
-  input.click()
-}
+function openFilePicker() { _openPicker(false) }
+function openFolderPicker() { _openPicker(true) }
 
 function cancelUpload() {
   _uploadXhrs.forEach(xhr => xhr.abort())
@@ -847,7 +852,7 @@ onMount(() => {
   })
 
   const dropZone = document.getElementById('drop-zone')!
-  dropZone.addEventListener('click', openFilePicker)
+  dropZone.addEventListener('click', () => { if (!_pickerActive) openFilePicker() })
   dropZone.addEventListener('dragover', (e: DragEvent) => { e.preventDefault(); dropZone.classList.add('drag-over') })
   dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'))
   dropZone.addEventListener('drop', async (e: DragEvent) => { e.preventDefault(); dropZone.classList.remove('drag-over'); await uploadFiles(Array.from(e.dataTransfer!.files) as File[]) })
