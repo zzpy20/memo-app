@@ -30,7 +30,7 @@ let uploadVisible = $state(false)
 let uploadPercent = $state(0)
 let uploadLabel = $state('')
 let _uploadXhrs: XMLHttpRequest[] = []
-const MAX_UPLOAD_MB = 100
+const MAX_UPLOAD_MB = 200
 const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 
 const IMG_EXTS = new Set(['jpg','jpeg','png','gif','webp','heic','avif','bmp','svg','tiff'])
