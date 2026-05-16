@@ -1,5 +1,18 @@
+/// <reference types="@cloudflare/workers-types" />
+
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import { drizzle } from 'drizzle-orm/d1'
+import { and, asc, desc, eq, isNotNull, isNull, like, ne, or, sql } from 'drizzle-orm'
+import { memos } from './src/db/schema'
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type Bindings = {
+  MEMO_D1: D1Database
+  MEMO_R2: R2Bucket
+  MEMO_AUTH_TOKEN: string
+}
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
@@ -15,25 +28,25 @@ function newMemoId() {
 
 function nowISO() { return new Date().toISOString() }
 
-function sanitizeTags(raw) {
+function sanitizeTags(raw: unknown): string {
   const arr = Array.isArray(raw) ? raw : []
   return JSON.stringify(arr.map(t => String(t).trim().toLowerCase()).filter(Boolean))
 }
 
-function sanitizeLinks(raw) {
+function sanitizeLinks(raw: unknown): string {
   const arr = Array.isArray(raw) ? raw : []
   return JSON.stringify(
-    arr.map(l => ({ label: String(l.label || '').slice(0, 200), url: String(l.url || '').slice(0, 500) }))
-       .filter(l => l.url)
+    arr.map((l: any) => ({ label: String(l.label || '').slice(0, 200), url: String(l.url || '').slice(0, 500) }))
+       .filter((l: any) => l.url)
   )
 }
 
-function sanitizeFTS(q) {
+function sanitizeFTS(q: string): string {
   return String(q).replace(/["'()[\]{}^|&:]/g, ' ').trim()
     .split(/\s+/).filter(Boolean).map(w => w + '*').join(' ').slice(0, 200)
 }
 
-function stripHtml(html) {
+function stripHtml(html: string): string {
   return (html || '')
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
@@ -42,9 +55,12 @@ function stripHtml(html) {
     .replace(/\s+/g, ' ').trim().slice(0, 30000)
 }
 
-const pfx = id => `memo-${id}/`
+const pfx = (id: string) => `memo-${id}/`
 
-async function syncSearchText(env, id, noteHtml, meta) {
+// Reusable condition: memo is not soft-deleted
+const notDeleted = or(isNull(memos.deleted_at), eq(memos.deleted_at, ''))!
+
+async function syncSearchText(env: Bindings, id: string, noteHtml?: string, meta?: any) {
   try {
     if (noteHtml === undefined) {
       const o = await env.MEMO_R2.get(pfx(id) + '_note')
@@ -56,24 +72,25 @@ async function syncSearchText(env, id, noteHtml, meta) {
       if (o) { try { meta = JSON.parse(await o.text()) } catch {} }
     }
     const snippetsObj = await env.MEMO_R2.get(pfx(id) + '_snippets')
-    let snippets = []
+    let snippets: any[] = []
     if (snippetsObj) { try { snippets = JSON.parse(await snippetsObj.text()) } catch {} }
     const files = meta?.files || {}
     const parts = [
       stripHtml(noteHtml),
       Object.keys(files).join(' '),
-      Object.values(files).flatMap(f => f.tags || []).join(' '),
-      Object.values(files).map(f => f.caption || '').filter(Boolean).join(' '),
-      snippets.map(s => s.title + ' ' + stripHtml(s.content || '')).join(' '),
+      Object.values(files).flatMap((f: any) => f.tags || []).join(' '),
+      Object.values(files).map((f: any) => f.caption || '').filter(Boolean).join(' '),
+      snippets.map((s: any) => s.title + ' ' + stripHtml(s.content || '')).join(' '),
     ]
     const searchText = parts.filter(Boolean).join(' ').slice(0, 50000)
-    await env.MEMO_D1.prepare('UPDATE memos SET search_text=? WHERE id=?').bind(searchText, id).run()
+    const db = drizzle(env.MEMO_D1)
+    await db.update(memos).set({ search_text: searchText }).where(eq(memos.id, id))
   } catch {}
 }
 
 // ── App ───────────────────────────────────────────────────────────────────────
 
-const app = new Hono()
+const app = new Hono<{ Bindings: Bindings }>()
 
 app.use('*', cors({
   origin: '*',
@@ -94,6 +111,7 @@ app.use('*', async (c, next) => {
 
 // ── Search ────────────────────────────────────────────────────────────────────
 
+// FTS5 requires raw SQL — Drizzle does not support virtual tables
 app.get('/search', async (c) => {
   const q = (c.req.query('q') || '').trim()
   if (!q) return c.json([])
@@ -109,6 +127,7 @@ app.get('/search', async (c) => {
   }
 })
 
+// FTS5 rebuild — DDL and triggers must stay as raw SQL
 app.post('/search/rebuild', async (c) => {
   try { await c.env.MEMO_D1.prepare("ALTER TABLE memos ADD COLUMN search_text TEXT NOT NULL DEFAULT ''").run() } catch {}
   const stmts = [
@@ -121,24 +140,25 @@ app.post('/search/rebuild', async (c) => {
     `CREATE TRIGGER memos_ad AFTER DELETE ON memos BEGIN INSERT INTO memos_fts(memos_fts,rowid,id,memo_id,uid,title,description,tags,search_text) VALUES('delete',old.rowid,old.id,old.memo_id,old.uid,old.title,old.description,old.tags,old.search_text); END`,
     `CREATE TRIGGER memos_au AFTER UPDATE ON memos BEGIN INSERT INTO memos_fts(memos_fts,rowid,id,memo_id,uid,title,description,tags,search_text) VALUES('delete',old.rowid,old.id,old.memo_id,old.uid,old.title,old.description,old.tags,old.search_text); INSERT INTO memos_fts(rowid,id,memo_id,uid,title,description,tags,search_text) VALUES(new.rowid,new.id,new.memo_id,new.uid,new.title,new.description,new.tags,new.search_text); END`,
   ]
-  for (const sql of stmts) {
-    try { await c.env.MEMO_D1.prepare(sql).run() } catch {}
+  for (const s of stmts) {
+    try { await c.env.MEMO_D1.prepare(s).run() } catch {}
   }
-  const { results: all } = await c.env.MEMO_D1.prepare('SELECT id FROM memos').all()
-  await Promise.all((all || []).map(({ id }) => syncSearchText(c.env, id)))
+  const db = drizzle(c.env.MEMO_D1)
+  const all = await db.select({ id: memos.id }).from(memos)
+  await Promise.all(all.map(({ id }) => syncSearchText(c.env, id)))
   await c.env.MEMO_D1.prepare("INSERT INTO memos_fts(memos_fts) VALUES('rebuild')").run()
-  return c.json({ ok: true, count: (all || []).length })
+  return c.json({ ok: true, count: all.length })
 })
 
 // ── Tags ──────────────────────────────────────────────────────────────────────
 
 app.get('/tags', async (c) => {
-  const { results } = await c.env.MEMO_D1.prepare(
-    `SELECT tags FROM memos WHERE tags != '[]' AND (deleted_at IS NULL OR deleted_at='')`
-  ).all()
-  const counts = {}
-  for (const r of results || []) {
-    try { JSON.parse(r.tags).forEach(t => { counts[t] = (counts[t] || 0) + 1 }) } catch {}
+  const db = drizzle(c.env.MEMO_D1)
+  const rows = await db.select({ tags: memos.tags }).from(memos)
+    .where(and(ne(memos.tags, '[]'), notDeleted))
+  const counts: Record<string, number> = {}
+  for (const r of rows) {
+    try { JSON.parse(r.tags).forEach((t: string) => { counts[t] = (counts[t] || 0) + 1 }) } catch {}
   }
   return c.json(Object.keys(counts).sort().map(t => ({ tag: t, count: counts[t] })))
 })
@@ -146,81 +166,98 @@ app.get('/tags', async (c) => {
 // ── Memos collection ──────────────────────────────────────────────────────────
 
 app.get('/memos', async (c) => {
-  try { await c.env.MEMO_D1.prepare('ALTER TABLE memos ADD COLUMN deleted_at TEXT DEFAULT NULL').run() } catch {}
+  const db = drizzle(c.env.MEMO_D1)
   const trash = c.req.query('trash') === '1'
   const tag = c.req.query('tag') || ''
   const sort = c.req.query('sort') || 'newest'
-  const order = sort === 'oldest' ? 'pinned DESC,created_at ASC'
-              : sort === 'updated' ? 'pinned DESC,updated_at DESC'
-              : 'pinned DESC,created_at DESC'
-  let stmt
-  if (trash) {
-    stmt = c.env.MEMO_D1.prepare(
-      `SELECT id,memo_id,uid,title,description,cover_file,tags,pinned,created_at,updated_at,deleted_at
-       FROM memos WHERE deleted_at IS NOT NULL AND deleted_at!='' ORDER BY deleted_at DESC LIMIT 500`
-    )
-  } else if (tag) {
-    stmt = c.env.MEMO_D1.prepare(
-      `SELECT id,memo_id,uid,title,description,cover_file,tags,pinned,created_at,updated_at
-       FROM memos WHERE (deleted_at IS NULL OR deleted_at='') AND tags LIKE ? ORDER BY ${order} LIMIT 500`
-    ).bind('%' + tag.replace(/[%_]/g, '') + '%')
-  } else {
-    stmt = c.env.MEMO_D1.prepare(
-      `SELECT id,memo_id,uid,title,description,cover_file,tags,pinned,created_at,updated_at
-       FROM memos WHERE deleted_at IS NULL OR deleted_at='' ORDER BY ${order} LIMIT 500`
-    )
+
+  const orderExpr = sort === 'oldest'
+    ? [desc(memos.pinned), asc(memos.created_at)]
+    : sort === 'updated'
+    ? [desc(memos.pinned), desc(memos.updated_at)]
+    : [desc(memos.pinned), desc(memos.created_at)]
+
+  const cols = {
+    id: memos.id, memo_id: memos.memo_id, uid: memos.uid,
+    title: memos.title, description: memos.description,
+    cover_file: memos.cover_file, tags: memos.tags,
+    pinned: memos.pinned, created_at: memos.created_at, updated_at: memos.updated_at,
   }
-  const { results } = await stmt.all()
-  return c.json(results || [])
+
+  let results
+  if (trash) {
+    results = await db.select({ ...cols, deleted_at: memos.deleted_at }).from(memos)
+      .where(and(isNotNull(memos.deleted_at), ne(memos.deleted_at, '')))
+      .orderBy(desc(memos.deleted_at)).limit(500)
+  } else if (tag) {
+    results = await db.select(cols).from(memos)
+      .where(and(notDeleted, like(memos.tags, `%${tag.replace(/[%_]/g, '')}%`)))
+      .orderBy(...orderExpr).limit(500)
+  } else {
+    results = await db.select(cols).from(memos)
+      .where(notDeleted)
+      .orderBy(...orderExpr).limit(500)
+  }
+  return c.json(results)
 })
 
 app.post('/memos', async (c) => {
+  const db = drizzle(c.env.MEMO_D1)
   const id = newId(), memo_id = newMemoId(), ts = nowISO()
-  await c.env.MEMO_D1.prepare(
-    `INSERT INTO memos(id,memo_id,uid,title,description,cover_file,tags,pinned,links,created_at,updated_at)
-     VALUES(?,?,?,?,?,?,?,?,?,?,?)`
-  ).bind(id, memo_id, '', '', '', '', '[]', 0, '[]', ts, ts).run()
+  await db.insert(memos).values({
+    id, memo_id, uid: '', title: '', description: '', cover_file: '',
+    tags: '[]', pinned: 0, links: '[]', search_text: '', created_at: ts, updated_at: ts,
+  })
   return c.json({ ok: true, id, memo_id })
 })
 
 // ── Single memo ───────────────────────────────────────────────────────────────
 
 app.get('/memos/:id', async (c) => {
-  const row = await c.env.MEMO_D1.prepare('SELECT * FROM memos WHERE id=?').bind(c.req.param('id')).first()
+  const db = drizzle(c.env.MEMO_D1)
+  const [row] = await db.select().from(memos).where(eq(memos.id, c.req.param('id'))).limit(1)
   if (!row) return c.json({ error: 'not_found' }, 404)
   return c.json(row)
 })
 
 app.put('/memos/:id', async (c) => {
+  const db = drizzle(c.env.MEMO_D1)
   const id = c.req.param('id')
   const body = await c.req.json()
-  const result = await c.env.MEMO_D1.prepare(
-    `UPDATE memos SET title=?,description=?,uid=?,cover_file=?,tags=?,pinned=?,links=?,updated_at=?,created_at=COALESCE(?,created_at) WHERE id=?`
-  ).bind(
-    String(body.title || '').slice(0, 500),
-    String(body.description || '').slice(0, 2000),
-    String(body.uid || '').slice(0, 100),
-    String(body.cover_file || ''),
-    sanitizeTags(body.tags),
-    body.pinned ? 1 : 0,
-    sanitizeLinks(body.links),
-    nowISO(),
-    (() => { if (!body.created_at) return null; const d = new Date(body.created_at + 'T00:00:00+10:00'); return isNaN(d) ? null : d.toISOString() })(),
-    id
-  ).run()
-  if (!result.meta?.changes) return c.json({ error: 'not_found' }, 404)
+
+  const parsedCreatedAt = (() => {
+    if (!body.created_at) return null
+    const d = new Date(body.created_at + 'T00:00:00+10:00')
+    return isNaN(d.getTime()) ? null : d.toISOString()
+  })()
+
+  const setValues: Partial<typeof memos.$inferInsert> = {
+    title:       String(body.title || '').slice(0, 500),
+    description: String(body.description || '').slice(0, 2000),
+    uid:         String(body.uid || '').slice(0, 100),
+    cover_file:  String(body.cover_file || ''),
+    tags:        sanitizeTags(body.tags),
+    pinned:      body.pinned ? 1 : 0,
+    links:       sanitizeLinks(body.links),
+    updated_at:  nowISO(),
+  }
+  if (parsedCreatedAt) setValues.created_at = parsedCreatedAt
+
+  const updated = await db.update(memos).set(setValues).where(eq(memos.id, id)).returning({ id: memos.id })
+  if (!updated.length) return c.json({ error: 'not_found' }, 404)
   return c.json({ ok: true })
 })
 
 app.delete('/memos/:id', async (c) => {
+  const db = drizzle(c.env.MEMO_D1)
   const id = c.req.param('id')
   if (c.req.query('permanent') === '1') {
     const p = pfx(id)
     const listed = await c.env.MEMO_R2.list({ prefix: p, limit: 1000 })
     for (const obj of listed.objects) await c.env.MEMO_R2.delete(obj.key)
-    await c.env.MEMO_D1.prepare('DELETE FROM memos WHERE id=?').bind(id).run()
+    await db.delete(memos).where(eq(memos.id, id))
   } else {
-    await c.env.MEMO_D1.prepare('UPDATE memos SET deleted_at=? WHERE id=?').bind(nowISO(), id).run()
+    await db.update(memos).set({ deleted_at: nowISO() }).where(eq(memos.id, id))
   }
   return c.json({ ok: true })
 })
@@ -228,22 +265,27 @@ app.delete('/memos/:id', async (c) => {
 // ── Memo actions ──────────────────────────────────────────────────────────────
 
 app.post('/memos/:id/untrash', async (c) => {
-  await c.env.MEMO_D1.prepare('UPDATE memos SET deleted_at=NULL WHERE id=?').bind(c.req.param('id')).run()
+  const db = drizzle(c.env.MEMO_D1)
+  await db.update(memos).set({ deleted_at: null }).where(eq(memos.id, c.req.param('id')))
   return c.json({ ok: true })
 })
 
 app.post('/memos/:id/duplicate', async (c) => {
+  const db = drizzle(c.env.MEMO_D1)
   const srcId = c.req.param('id')
-  const src = await c.env.MEMO_D1.prepare(
-    "SELECT * FROM memos WHERE id=? AND (deleted_at IS NULL OR deleted_at='')"
-  ).bind(srcId).first()
+  const [src] = await db.select().from(memos).where(and(eq(memos.id, srcId), notDeleted)).limit(1)
   if (!src) return c.json({ error: 'not_found' }, 404)
+
   const newId_ = newId(), newMemoId_ = newMemoId(), ts = nowISO()
-  await c.env.MEMO_D1.prepare(
-    `INSERT INTO memos(id,memo_id,uid,title,description,cover_file,tags,pinned,links,search_text,created_at,updated_at)
-     VALUES(?,?,?,?,?,?,?,0,?,?,?,?)`
-  ).bind(newId_, newMemoId_, src.uid, src.title + ' (copy)', src.description,
-    src.cover_file, src.tags, src.links, src.search_text, ts, ts).run()
+  await db.insert(memos).values({
+    ...src,
+    id: newId_,
+    memo_id: newMemoId_,
+    title: src.title + ' (copy)',
+    pinned: 0,
+    created_at: ts,
+    updated_at: ts,
+  })
   const listed = await c.env.MEMO_R2.list({ prefix: pfx(srcId), limit: 1000 })
   for (const obj of listed.objects) {
     const relKey = obj.key.slice(pfx(srcId).length)
@@ -364,7 +406,7 @@ app.post('/memos/:id/restore', async (c) => {
   return c.json({ ok: true })
 })
 
-// Serve / delete a specific file — wildcard captures keys with slashes (e.g. folder/file.jpg)
+// Serve / delete a specific file
 app.get('/memos/:id/files/:filename{.+}', async (c) => {
   const obj = await c.env.MEMO_R2.get(pfx(c.req.param('id')) + c.req.param('filename'))
   if (!obj) return c.json({ error: 'not_found' }, 404)

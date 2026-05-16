@@ -7,6 +7,7 @@ account_id = "142bbf41fc952adb0ceb663375ef50d8"
 binding = "MEMO_D1"
 database_name = "memo-db"
 database_id = "2554e206-c3d9-45a9-a5b6-96e06e428e1d"
+migrations_dir = "drizzle"
 
 [[r2_buckets]]
 binding = "MEMO_R2"

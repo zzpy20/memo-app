@@ -7,15 +7,20 @@
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "build:worker": "esbuild worker.ts --bundle --format=esm --platform=browser --target=esnext --outfile=_worker_bundle.js",
+    "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
+    "drizzle-orm": "^0.45.2",
     "hono": "^4"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260516.1",
     "@sveltejs/adapter-cloudflare": "^4",
     "@sveltejs/kit": "^2",
     "@sveltejs/vite-plugin-svelte": "^3",
+    "drizzle-kit": "^0.31.10",
     "svelte": "^5",
     "svelte-check": "^3",
     "typescript": "^5",
