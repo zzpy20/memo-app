@@ -159,6 +159,16 @@ app.get('/share/:token/files/:filename{.+}', async (c) => {
   })
 })
 
+app.get('/share/:token/snippets', async (c) => {
+  const db = drizzle(c.env.MEMO_D1)
+  const [row] = await db.select({ id: memos.id }).from(memos)
+    .where(and(eq(memos.share_token, c.req.param('token')), notDeleted)).limit(1)
+  if (!row) return c.json({ error: 'not_found' }, 404)
+  const obj = await c.env.MEMO_R2.get(pfx(row.id) + '_snippets')
+  if (!obj) return c.json([])
+  try { return c.json(JSON.parse(await obj.text())) } catch { return c.json([]) }
+})
+
 // ── Share management (auth required) ──────────────────────────────────────────
 app.get('/memos/:id/share', async (c) => {
   const db = drizzle(c.env.MEMO_D1)

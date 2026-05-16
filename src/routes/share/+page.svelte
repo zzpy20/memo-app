@@ -19,8 +19,19 @@ let token = ''
 let memo: any = null
 let noteHtml = ''
 let files: any[] = []
+let snippets: any[] = []
+let expanded = $state<Record<number, boolean>>({})
+let allExpanded = $state(false)
 let loading = $state(true)
 let error = $state('')
+
+function toggleClip(i: number) { expanded = { ...expanded, [i]: !expanded[i] } }
+function toggleAll() {
+  allExpanded = !allExpanded
+  const next: Record<number, boolean> = {}
+  snippets.forEach((_, i) => { next[i] = allExpanded })
+  expanded = next
+}
 
 // lightbox
 let lbOpen = $state(false)
@@ -71,12 +82,14 @@ onMount(async () => {
   try {
     memo = await (await fetch(WORKER + '/share/' + token)).json()
     if (memo.error) { error = 'This link is invalid or has been revoked.'; loading = false; return }
-    const [noteRes, filesRes] = await Promise.all([
+    const [noteRes, filesRes, snippetsRes] = await Promise.all([
       fetch(WORKER + '/share/' + token + '/note'),
       fetch(WORKER + '/share/' + token + '/files'),
+      fetch(WORKER + '/share/' + token + '/snippets'),
     ])
     noteHtml = await noteRes.text()
     files = await filesRes.json()
+    snippets = await snippetsRes.json().catch(() => [])
   } catch { error = 'Failed to load memo.' }
   loading = false
 
@@ -121,6 +134,27 @@ onMount(async () => {
   <div class="card">
     <div class="section-label">Notes</div>
     <div class="note-content">{@html noteHtml}</div>
+  </div>
+  {/if}
+
+  {#if snippets.length}
+  <div class="card">
+    <div class="section-hdr">
+      <div class="section-label">Clips ({snippets.length})</div>
+      <button class="expand-all-btn" onclick={toggleAll}>{allExpanded ? 'Collapse all' : 'Expand all'}</button>
+    </div>
+    {#each snippets as s, i}
+    <div class="clip">
+      <button class="clip-hdr" onclick={() => toggleClip(i)}>
+        <span class="clip-icon">📋</span>
+        <span class="clip-title">{s.title || 'Untitled clip'}</span>
+        <span class="clip-chev">{expanded[i] ? '▾' : '▸'}</span>
+      </button>
+      {#if expanded[i]}
+      <div class="clip-body">{@html s.content || ''}</div>
+      {/if}
+    </div>
+    {/each}
   </div>
   {/if}
 
@@ -215,6 +249,18 @@ h1{font-size:1.6rem;font-weight:700;line-height:1.2;margin-bottom:8px}
 .file-view:hover{border-color:#6366f1;color:#6366f1}
 .file-dl{padding:4px 10px;border:1px solid #e7e5e4;border-radius:6px;font-size:.78rem;color:#78716c;text-decoration:none;flex-shrink:0}
 .file-dl:hover{border-color:#6366f1;color:#6366f1}
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.section-hdr .section-label{margin-bottom:0}
+.expand-all-btn{background:none;border:1px solid #e7e5e4;border-radius:6px;padding:3px 10px;font-size:.75rem;color:#78716c;cursor:pointer;font-family:inherit}
+.expand-all-btn:hover{border-color:#6366f1;color:#6366f1}
+.clip{border-bottom:1px solid #f0eeec}
+.clip:last-child{border-bottom:none}
+.clip-hdr{width:100%;display:flex;align-items:center;gap:8px;background:none;border:none;padding:10px 0;cursor:pointer;text-align:left;font-family:inherit}
+.clip-hdr:hover .clip-title{color:#6366f1}
+.clip-icon{font-size:1rem;flex-shrink:0}
+.clip-title{flex:1;font-size:.88rem;font-weight:500;color:#1c1917;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.clip-chev{color:#78716c;font-size:.75rem;flex-shrink:0}
+.clip-body{padding:4px 0 12px 28px;font-size:.85rem;line-height:1.65;color:#44403c;white-space:pre-wrap;word-break:break-word}
 .footer{text-align:center;font-size:.75rem;color:#a8a29e;margin-top:32px}
 
 /* Lightbox */
