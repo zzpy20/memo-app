@@ -362,6 +362,15 @@ function openFilePicker() {
   input.click()
 }
 
+function openFolderPicker() {
+  const input = document.createElement('input'); input.type = 'file'
+  ;(input as any).webkitdirectory = true
+  input.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0'
+  document.body.appendChild(input)
+  input.addEventListener('change', async () => { const files = Array.from(input.files || []); input.remove(); await uploadFiles(files as File[]) })
+  input.click()
+}
+
 function cancelUpload() {
   _uploadXhrs.forEach(xhr => xhr.abort())
   _uploadXhrs = []
@@ -785,7 +794,7 @@ onMount(() => {
     toggleSnippet, openClipModal, deleteSnippet, renameClip, copyClipText,
     removeTag, selectTagSug, removeLink,
     moveFile, bulkMoveTo, applyBlockStyle, applyHighlight,
-    renameFolder, removeFolder, setNoteImgSize,
+    renameFolder, removeFolder, setNoteImgSize, openFolderPicker,
   })
 
   const dropZone = document.getElementById('drop-zone')!
@@ -994,7 +1003,7 @@ onMount(() => {
 <div class="file-browser">
   <div class="drop-zone" id="drop-zone">
     <div class="drop-zone-icon">↑</div>
-    <div class="drop-zone-text" id="drop-zone-text">Drop files here · or <b>click to browse</b></div>
+    <div class="drop-zone-text" id="drop-zone-text">Drop files here · or <b>click to browse</b> · or <b onclick={(e) => { e.stopPropagation(); openFolderPicker() }} style="cursor:pointer">upload folder</b></div>
     {#if uploadVisible}
     <div id="upload-progress">
       <div id="upload-bar-row">
