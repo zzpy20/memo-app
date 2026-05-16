@@ -79,7 +79,7 @@ onMount(async () => {
       {#each files.filter((f: any) => !f.key.startsWith('_')) as f}
       <div class="file-row">
         {#if isImg(f.key)}
-        <img class="file-thumb" src={fileUrl(f.key)} loading="lazy" alt="" onerror="this.style.display='none'">
+        <img class="file-thumb" src={fileUrl(f.key)} loading="lazy" alt="" onerror={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}>
         {:else}
         <div class="file-icon">📄</div>
         {/if}
