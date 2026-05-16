@@ -1,5 +1,5 @@
 <script lang="ts">
-import { onMount } from 'svelte'
+import { onMount, tick } from 'svelte'
 import { api, fileUrl as apiFileUrl, safeJson, esc, fmtDate, getToken, logout, WORKER } from '$lib/api'
 
 let memoId = ''
@@ -26,6 +26,9 @@ const selectedFiles = new Set<string>()
 let noteEditor: HTMLDivElement
 let clipTitleInput: HTMLInputElement
 let clipPasteArea: HTMLDivElement
+let uploadVisible = $state(false)
+let uploadPercent = $state(0)
+let uploadLabel = $state('')
 
 const IMG_EXTS = new Set(['jpg','jpeg','png','gif','webp','heic','avif','bmp','svg','tiff'])
 const VIDEO_EXTS = new Set(['mp4','mov','webm','avi','mkv','m4v'])
@@ -144,7 +147,7 @@ function renderFileList() {
     files.forEach((f: any) => {
       const name = basename(f.key); const card = document.createElement('div')
       card.className = 'file-grid-card' + (selectedFiles.has(f.key) ? ' selected' : ''); card.dataset.key = f.key
-      const th = isImg(f.key) ? `<img src="${fu(f.key)}" loading="lazy" alt="" data-preview="1">` : isVideo(f.key) ? `<div class="video-grid-preview">▶</div>` : `<div class="grid-icon">${fileIcon(f.key)}</div>`
+      const th = isImg(f.key) ? `<img src="${fu(f.key)}" loading="lazy" alt="" data-preview="1" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\\'grid-icon\\'>${fileIcon(f.key)}</div>'">` : isVideo(f.key) ? `<div class="video-grid-preview">▶</div>` : `<div class="grid-icon">${fileIcon(f.key)}</div>`
       card.innerHTML = `<div class="grid-cb" onclick="toggleSelect('${esc(f.key)}');event.stopPropagation()">✓</div><div class="grid-thumb" onclick="${isPreviewable(f.key) ? `openLightbox('${esc(f.key)}')` : `downloadFile('${esc(f.key)}')`}">${th}</div><div class="grid-info"><div class="grid-name" title="${esc(f.key)}">${esc(name)}</div><div class="grid-meta">${fmtSize(f.size)}</div></div><button class="grid-menu-btn" onclick="showFileMenu(event,'${esc(f.key)}')">⋯</button>`
       addFileDrag(card, f.key); list.appendChild(card)
     })
@@ -159,7 +162,7 @@ function renderFileList() {
       const name = basename(f.key); const fm = meta.files[f.key] || {}
       const fp = f.key.includes('/') ? f.key.split('/').slice(0, -1).join('/') : ''
       const row = document.createElement('div'); row.className = 'file-row' + (selectedFiles.has(f.key) ? ' selected' : ''); row.dataset.key = f.key
-      const th = isImg(f.key) ? `<img class="file-row-thumb" src="${fu(f.key)}" loading="lazy" alt="" data-preview="1" onclick="openLightbox('${esc(f.key)}')">` : isVideo(f.key) ? `<div class="file-row-thumb video-row-thumb" onclick="openLightbox('${esc(f.key)}')">▶</div>` : `<div class="file-row-icon">${fileIcon(f.key)}</div>`
+      const th = isImg(f.key) ? `<img class="file-row-thumb" src="${fu(f.key)}" loading="lazy" alt="" data-preview="1" onclick="openLightbox('${esc(f.key)}')" onerror="this.outerHTML='<div class=\\'file-row-icon\\'>${fileIcon(f.key)}</div>'">` : isVideo(f.key) ? `<div class="file-row-thumb video-row-thumb" onclick="openLightbox('${esc(f.key)}')">▶</div>` : `<div class="file-row-icon">${fileIcon(f.key)}</div>`
       row.innerHTML = `<div class="file-cb" onclick="toggleSelect('${esc(f.key)}')">✓</div>${th}<div class="file-row-info"><div class="file-row-name" title="${esc(name)}">${esc(name)}</div><div class="file-row-meta">${fp ? esc(fp) + ' · ' : ''}${fmtSize(f.size)} · ${fmtDate(f.uploaded)}${fm.caption ? ` · <em>${esc(fm.caption)}</em>` : ''}${fm.tags?.length ? ` · <span style="color:var(--accent)">Tags: ${(fm.tags as string[]).map(t => esc(t)).join(', ')}</span>` : ''}</div></div><div class="file-row-actions"><button onclick="showMoveMenu(event,'${esc(f.key)}')">Move ▾</button><button onclick="openFileInfo('${esc(f.key)}')">ⓘ</button>${isPreviewable(f.key) ? `<button onclick="openLightbox('${esc(f.key)}')">View</button>` : `<button onclick="downloadFile('${esc(f.key)}')">↓</button>`}<button class="del-btn" onclick="trashFile('${esc(f.key)}')">🗑</button></div>`
       addFileDrag(row, f.key); list.appendChild(row)
     })
@@ -358,26 +361,27 @@ function openFilePicker() {
 
 async function uploadFiles(files: File[]) {
   if (!files.length) return
-  const prog = document.getElementById('upload-progress')
-  const fill = document.getElementById('upload-bar-fill') as HTMLElement | null
-  const barText = document.getElementById('upload-bar-text')
-  if (prog) prog.style.display = ''
+  uploadVisible = true
+  await tick() // flush before XHR so the bar is in the DOM
+  const errors: string[] = []
   for (let i = 0; i < files.length; i++) {
     const file = files[i]
-    if (barText) barText.textContent = files.length > 1 ? `${file.name} (${i + 1} of ${files.length})` : file.name
-    if (fill) fill.style.width = '0%'
-    await new Promise<void>(resolve => {
+    uploadLabel = files.length > 1 ? `${file.name} (${i + 1} of ${files.length})` : file.name
+    uploadPercent = 0
+    const ok = await new Promise<boolean>(resolve => {
       const fd = new FormData(); fd.append('file', file)
       if (currentFolder) fd.append('folder', currentFolder)
       const xhr = new XMLHttpRequest()
       xhr.open('POST', WORKER + '/memos/' + memoId + '/files?t=' + encodeURIComponent(getToken()))
-      xhr.upload.onprogress = e => { if (e.lengthComputable && fill) fill.style.width = (e.loaded / e.total * 100) + '%' }
-      xhr.onload = () => { if (xhr.status === 401) logout(); if (fill) fill.style.width = '100%'; resolve() }
-      xhr.onerror = () => resolve(); xhr.send(fd)
+      xhr.upload.onprogress = e => { if (e.lengthComputable) uploadPercent = e.loaded / e.total * 100 }
+      xhr.onload = () => { if (xhr.status === 401) { logout(); resolve(false) } else if (xhr.status >= 400) { resolve(false) } else { uploadPercent = 100; resolve(true) } }
+      xhr.onerror = () => resolve(false); xhr.send(fd)
     })
+    if (!ok) errors.push(file.name)
   }
-  if (prog) prog.style.display = 'none'
-  if (fill) fill.style.width = '0%'
+  uploadVisible = false
+  uploadPercent = 0
+  if (errors.length) alert(`Failed to upload: ${errors.join(', ')}`)
   await loadFiles()
 }
 
@@ -958,10 +962,12 @@ onMount(() => {
   <div class="drop-zone" id="drop-zone">
     <div class="drop-zone-icon">↑</div>
     <div class="drop-zone-text" id="drop-zone-text">Drop files here · or <b>click to browse</b></div>
+    {#if uploadVisible}
     <div id="upload-progress">
-      <div id="upload-bar"><div id="upload-bar-fill"></div></div>
-      <div id="upload-bar-text"></div>
+      <div id="upload-bar"><div id="upload-bar-fill" style="width:{uploadPercent}%"></div></div>
+      <div id="upload-bar-text">{uploadLabel}</div>
     </div>
+    {/if}
   </div>
 
   <div class="fb-toolbar">
@@ -1190,7 +1196,7 @@ onMount(() => {
 .drop-zone-icon{font-size:1.1rem;opacity:.4;margin-bottom:2px}
 .drop-zone-text{font-size:.82rem;color:var(--muted)}
 .drop-zone-text b{color:var(--accent);font-weight:500}
-#upload-progress{display:none;margin:8px 0 0}
+#upload-progress{margin:8px 0 0}
 #upload-bar{height:4px;background:#e2e8f0;border-radius:2px;overflow:hidden}
 #upload-bar-fill{height:100%;background:var(--accent);width:0%;transition:width .15s}
 #upload-bar-text{font-size:.72rem;color:var(--muted);margin-top:3px}
