@@ -468,21 +468,6 @@ app.post('/memos/:id/move', async (c) => {
   return c.json({ ok: true, key: dstKey })
 })
 
-app.post('/memos/:id/rename', async (c) => {
-  const id = c.req.param('id')
-  const { srcKey, newName }: { srcKey: string; newName: string } = await c.req.json()
-  if (!srcKey || !newName) return c.json({ error: 'invalid' }, 400)
-  const folder = srcKey.includes('/') ? srcKey.split('/').slice(0, -1).join('/') : ''
-  const safeName = newName.replace(/\//g, '_')
-  const dstKey = folder ? folder + '/' + safeName : safeName
-  if (srcKey === dstKey) return c.json({ ok: true, dstKey })
-  const obj = await c.env.MEMO_R2.get(pfx(id) + srcKey)
-  if (!obj) return c.json({ error: 'not_found' }, 404)
-  await c.env.MEMO_R2.put(pfx(id) + dstKey, obj.body, { httpMetadata: obj.httpMetadata })
-  await c.env.MEMO_R2.delete(pfx(id) + srcKey)
-  return c.json({ ok: true, dstKey })
-})
-
 app.post('/memos/:id/trash', async (c) => {
   const id = c.req.param('id')
   const { key } = await c.req.json()

@@ -323,7 +323,6 @@ function showBulkMoveMenu(e: Event) {
 
 function showFileMenu(e: Event, key: string) {
   showFloatMenu(e, [
-    { label: 'Rename', fn: `renameFile('${esc(key)}')` },
     { label: 'View / Preview', fn: `openLightbox('${esc(key)}')` },
     { label: 'File info', fn: `openFileInfo('${esc(key)}')` },
     { label: 'Move to…', fn: `showMoveMenu(event,'${esc(key)}')` },
@@ -345,17 +344,6 @@ async function moveFile(srcKey: string, dstFolder: string) {
     const { key: newKey } = await r.json()
     if (meta.files[srcKey]) { meta.files[newKey] = meta.files[srcKey]; delete meta.files[srcKey] }
     if (memo?.cover_file === srcKey) { memo.cover_file = newKey; await saveInfo() }
-    await saveMeta(); await loadFiles()
-  } catch {}
-}
-
-async function renameFile(key: string) {
-  const newName = prompt('Rename file:', basename(key))
-  if (!newName || newName === basename(key)) return
-  try {
-    const r = await api('/memos/' + memoId + '/rename', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ srcKey: key, newName }) })
-    const { dstKey } = await r.json()
-    if (meta.files[key]) { meta.files[dstKey] = meta.files[key]; delete meta.files[key] }
     await saveMeta(); await loadFiles()
   } catch {}
 }
@@ -838,7 +826,6 @@ onMount(() => {
     removeTag, selectTagSug, removeLink,
     moveFile, bulkMoveTo, applyBlockStyle, applyHighlight,
     renameFolder, removeFolder, setNoteImgSize, openFolderPicker,
-    renameFile,
   })
 
   document.addEventListener('keydown', (e: KeyboardEvent) => {
