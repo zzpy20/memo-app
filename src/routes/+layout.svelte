@@ -23,7 +23,7 @@
   })
 
   $effect(() => {
-    if ($tokenStore === '') authed = false
+    if ($tokenStore === '' && !window.location.pathname.startsWith('/share')) authed = false
   })
 
   function toggleDark() {
