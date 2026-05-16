@@ -1249,8 +1249,7 @@ onDestroy(() => {
 .gsearch-wrap{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 16px;position:sticky;top:52px;z-index:99}
 #gsearch{width:100%;padding:7px 14px;border:1px solid var(--border);border-radius:8px;font-size:.9rem;font-family:inherit;background:var(--bg);color:var(--text);outline:none}
 #gsearch:focus{border-color:var(--accent)}
-.gsearch-drop{position:absolute;left:16px;right:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200;max-height:340px;overflow-y:auto;display:none}
-.gsearch-drop.open{display:block}
+.gsearch-drop{position:absolute;left:16px;right:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200;max-height:340px;overflow-y:auto}
 .btn-icon{background:none;border:none;cursor:pointer;padding:5px 7px;border-radius:7px;font-size:.95rem;opacity:.45;line-height:1;transition:opacity .1s;flex-shrink:0;position:relative}
 .btn-icon:hover{opacity:1;background:var(--bg)}
 .btn-icon[data-tip]::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1c1917;color:#fff;font-size:.7rem;font-family:'DM Sans',sans-serif;white-space:nowrap;padding:3px 8px;border-radius:5px;pointer-events:none;opacity:0;transition:opacity .15s;z-index:500}
