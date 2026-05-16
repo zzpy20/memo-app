@@ -1,5 +1,5 @@
 <script lang="ts">
-import { onMount, tick } from 'svelte'
+import { onMount, onDestroy, tick } from 'svelte'
 import { api, fileUrl as apiFileUrl, safeJson, esc, fmtDate, getToken, logout, WORKER } from '$lib/api'
 
 let memoId = ''
@@ -819,6 +819,24 @@ function positionHover(e: MouseEvent) {
   hb.style.left = left + 'px'; hb.style.top = Math.max(pad, Math.min(top, window.innerHeight - h - pad)) + 'px'
 }
 
+function onKeyDown(e: KeyboardEvent) {
+  const tag = (e.target as HTMLElement).tagName
+  const inEditable = ['INPUT','TEXTAREA','SELECT'].includes(tag) || (e.target as HTMLElement).isContentEditable
+  const lbOpen = !document.getElementById('lightbox')?.classList.contains('hidden')
+  if (e.key === 'Escape') {
+    if (lbOpen) { closeLightbox(); return }
+    if (!document.getElementById('info-modal')?.classList.contains('hidden')) { closeModal(); return }
+    if (!document.getElementById('trash-modal')?.classList.contains('hidden')) { closeTrashModal(); return }
+  }
+  if (lbOpen) {
+    if (e.key === 'ArrowLeft') { e.preventDefault(); lbNav(-1) }
+    if (e.key === 'ArrowRight') { e.preventDefault(); lbNav(1) }
+  }
+  if (inEditable && (e.metaKey || e.ctrlKey) && e.key === 's') {
+    e.preventDefault(); saveNote()
+  }
+}
+
 onMount(() => {
   memoId = new URLSearchParams(location.search).get('id') || ''
   viewMode = localStorage.getItem('memo_view') || 'list'
@@ -833,23 +851,7 @@ onMount(() => {
     renameFolder, removeFolder, setNoteImgSize, openFolderPicker,
   })
 
-  document.addEventListener('keydown', (e: KeyboardEvent) => {
-    const tag = (e.target as HTMLElement).tagName
-    const inEditable = ['INPUT','TEXTAREA','SELECT'].includes(tag) || (e.target as HTMLElement).isContentEditable
-    const lbOpen = !document.getElementById('lightbox')?.classList.contains('hidden')
-    if (e.key === 'Escape') {
-      if (lbOpen) { closeLightbox(); return }
-      if (!document.getElementById('info-modal')?.classList.contains('hidden')) { closeModal(); return }
-      if (!document.getElementById('trash-modal')?.classList.contains('hidden')) { closeTrashModal(); return }
-    }
-    if (lbOpen) {
-      if (e.key === 'ArrowLeft') { e.preventDefault(); lbNav(-1) }
-      if (e.key === 'ArrowRight') { e.preventDefault(); lbNav(1) }
-    }
-    if (inEditable && (e.metaKey || e.ctrlKey) && e.key === 's') {
-      e.preventDefault(); saveNote()
-    }
-  })
+  document.addEventListener('keydown', onKeyDown)
 
   const dropZone = document.getElementById('drop-zone')!
   dropZone.addEventListener('click', () => { if (!_pickerActive) openFilePicker() })
@@ -934,6 +936,10 @@ onMount(() => {
   })
 
   init()
+})
+
+onDestroy(() => {
+  document.removeEventListener('keydown', onKeyDown)
 })
 </script>
 

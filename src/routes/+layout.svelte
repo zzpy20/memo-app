@@ -81,6 +81,6 @@
   @media (max-width:640px){
     .auth-box{width:calc(100vw - 48px);padding:32px 24px}
   }
-  .dark-btn{position:fixed;bottom:16px;right:16px;background:var(--surface);border:1px solid var(--border);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+  .dark-btn{position:fixed;bottom:16px;right:16px;background:var(--surface);border:1px solid var(--border);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;z-index:400;box-shadow:0 2px 8px rgba(0,0,0,.15)}
   .dark-btn:hover{border-color:var(--accent)}
 </style>
