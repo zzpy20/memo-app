@@ -577,15 +577,17 @@ app.post('/quick-capture', async (c) => {
     return c.json({ ok: true, type: 'clip' })
   }
 
-  if (type === 'image' && data) {
+  if ((type === 'image' || type === 'file') && data) {
     const clean = String(data).replace(/\s/g, '')
     const binary = atob(clean)
     const bytes = new Uint8Array(binary.length)
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-    const ext = String(mime || 'image/jpeg').split('/')[1]?.replace('jpeg', 'jpg') || 'jpg'
+    const mimeStr = String(mime || (type === 'image' ? 'image/jpeg' : 'application/octet-stream'))
+    const extFromMime = mimeStr.split('/')[1]?.replace('jpeg', 'jpg').replace('quicktime', 'mov') || 'bin'
     const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
-    const key = String(filename || `capture-${ts}.${ext}`).replace(/[^a-zA-Z0-9._\-]/g, '_')
-    await c.env.MEMO_R2.put(pfx(id) + key, bytes, { httpMetadata: { contentType: String(mime || 'image/jpeg') } })
+    const rawKey = String(filename || `capture-${ts}.${extFromMime}`)
+    const key = rawKey.replace(/[^a-zA-Z0-9._\-]/g, '_')
+    await c.env.MEMO_R2.put(pfx(id) + key, bytes, { httpMetadata: { contentType: mimeStr } })
     if (!row.cover_file && isImageKey(key)) {
       await db.update(memos).set({ cover_file: key }).where(eq(memos.id, id))
     }
