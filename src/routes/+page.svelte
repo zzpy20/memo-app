@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { api, tokenStore, logout, safeJson, fmtDate, fmtDateTime, fileUrl } from '$lib/api'
+  import { api, tokenStore, logout, safeJson, fmtDate, fmtDateTime, fileUrl, WORKER, getToken } from '$lib/api'
 
   interface Memo {
     id: string
@@ -42,6 +42,16 @@
   let rebuildLabel = $state('⟳ Reindex')
   let rebuildDisabled = $state(false)
   let storageText = $state('')
+  let shortcutsOpen = $state(false)
+  let tokenVisible = $state(false)
+  let shortcutCopied = $state<string | null>(null)
+
+  function copyShortcut(text: string, key: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      shortcutCopied = key
+      setTimeout(() => { shortcutCopied = null }, 1500)
+    })
+  }
 
   onMount(() => {
     loadTags()
@@ -343,8 +353,65 @@
   </button>
   {#if !inTrash}<button class="new-btn" onclick={newMemo}>+ New Memo</button>{/if}
   {#if storageText}<span class="storage-label">{storageText}</span>{/if}
+  <button class="shortcuts-btn" onclick={() => { shortcutsOpen = true; tokenVisible = false }} title="iOS Shortcuts Setup">⌘</button>
   <button class="signout-btn" onclick={logout}>Sign out</button>
 </header>
+
+{#if shortcutsOpen}
+<div class="sc-overlay" onclick={(e) => { if ((e.target as HTMLElement).classList.contains('sc-overlay')) shortcutsOpen = false }}>
+  <div class="sc-modal">
+    <div class="sc-hdr">
+      <h2>iOS Shortcuts Setup</h2>
+      <button class="sc-close" onclick={() => shortcutsOpen = false}>✕</button>
+    </div>
+    <p class="sc-intro">Build a home-screen shortcut that sends clipboard content (text or image) directly into a memo as a clip or file — one tap, no friction.</p>
+
+    <div class="sc-section">
+      <div class="sc-label">Worker URL</div>
+      <div class="sc-row">
+        <code class="sc-code">{WORKER}/quick-capture</code>
+        <button class="sc-copy" onclick={() => copyShortcut(WORKER + '/quick-capture', 'url')}>{shortcutCopied === 'url' ? 'Copied!' : 'Copy'}</button>
+      </div>
+    </div>
+
+    <div class="sc-section">
+      <div class="sc-label">Your token (passphrase)</div>
+      <div class="sc-row">
+        <code class="sc-code">{tokenVisible ? getToken() : '••••••••••••'}</code>
+        <button class="sc-copy" onclick={() => tokenVisible = !tokenVisible}>{tokenVisible ? 'Hide' : 'Reveal'}</button>
+        {#if tokenVisible}<button class="sc-copy" onclick={() => copyShortcut(getToken(), 'token')}>{shortcutCopied === 'token' ? 'Copied!' : 'Copy'}</button>{/if}
+      </div>
+    </div>
+
+    <div class="sc-section">
+      <div class="sc-label">Your memos — copy ID for the shortcut</div>
+      {#each allMemos.filter(m => !m.pinned || true).slice(0, 20) as m}
+      <div class="sc-memo-row">
+        <span class="sc-memo-name">{m.title || 'Untitled'}</span>
+        <code class="sc-memo-id">{m.memo_id}</code>
+        <button class="sc-copy" onclick={() => copyShortcut(m.memo_id, m.memo_id)}>{shortcutCopied === m.memo_id ? 'Copied!' : 'Copy'}</button>
+      </div>
+      {/each}
+    </div>
+
+    <div class="sc-section">
+      <div class="sc-label">Build the Shortcut — step by step</div>
+      <ol class="sc-steps">
+        <li>Open <b>Shortcuts</b> app → tap <b>+</b> → name it "Memo Capture"</li>
+        <li>Add <b>Get Clipboard</b> action</li>
+        <li>Add <b>If</b> → condition: <b>Clipboard has no value</b> → Otherwise → add <b>Stop and output</b> "Nothing in clipboard"</li>
+        <li>Add <b>Choose from Menu</b> → add one option per memo you want (paste the memo name), note its position</li>
+        <li>Inside each menu item, add <b>Set Variable</b> → name: <code>MemoID</code> → value: paste the memo ID for that item</li>
+        <li>After the menu: add <b>If</b> → Input: <b>Clipboard</b> → condition: <b>is Image</b></li>
+        <li><b>If branch (image):</b> Add <b>Encode [Clipboard] with Base64</b> → set variable <code>B64</code>. Add <b>Get Contents of URL</b>: URL = <code>{WORKER}/quick-capture?t=YOUR_TOKEN</code>, Method = POST, Headers: Content-Type → application/json, Body = JSON: <code>{'{'}  "memo_id": [MemoID variable], "type": "image", "data": [B64 variable], "mime": "image/jpeg"  {'}'}</code></li>
+        <li><b>Otherwise (text):</b> Add <b>Get Contents of URL</b>: same URL, Body = JSON: <code>{'{'}  "memo_id": [MemoID variable], "type": "text", "content": [Clipboard variable]  {'}'}</code></li>
+        <li>After both branches: add <b>Show Notification</b> → "Saved to Memo ✓"</li>
+        <li>Add to Home Screen: share button → <b>Add to Home Screen</b></li>
+      </ol>
+    </div>
+  </div>
+</div>
+{/if}
 
 {#if inTrash}
 <div class="trash-bar">
@@ -478,6 +545,8 @@
   .trash-count{background:var(--danger);color:#fff;font-size:.65rem;font-weight:700;border-radius:10px;padding:1px 5px;line-height:1.4}
   .signout-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:.82rem;cursor:pointer;color:var(--muted);flex-shrink:0;font-family:inherit}
   .signout-btn:hover{border-color:var(--text);color:var(--text)}
+  .shortcuts-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:1rem;cursor:pointer;color:var(--muted);flex-shrink:0;font-family:inherit}
+  .shortcuts-btn:hover{border-color:var(--accent);color:var(--accent)}
   .storage-label{font-size:.75rem;color:var(--muted);white-space:nowrap}
   .sort-select{border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:.82rem;font-family:inherit;background:var(--surface);color:var(--muted);cursor:pointer;flex-shrink:0}
   .sort-select:focus{outline:none;border-color:var(--accent)}
@@ -581,4 +650,23 @@
     .lr-actions{opacity:1}
     .memo-card{box-shadow:0 1px 2px rgba(0,0,0,.06)}
   }
+  .sc-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 16px}
+  .sc-modal{background:var(--surface);border-radius:16px;width:100%;max-width:600px;padding:28px;box-shadow:0 16px 48px rgba(0,0,0,.2)}
+  .sc-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .sc-hdr h2{font-size:1.1rem;font-weight:600}
+  .sc-close{background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted);padding:4px 8px;border-radius:6px}
+  .sc-close:hover{background:var(--bg)}
+  .sc-intro{font-size:.85rem;color:var(--muted);margin-bottom:20px;line-height:1.5}
+  .sc-section{margin-bottom:20px}
+  .sc-label{font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .sc-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .sc-code{font-family:'DM Mono',monospace;font-size:.8rem;background:var(--bg);padding:6px 10px;border-radius:6px;border:1px solid var(--border);flex:1;word-break:break-all}
+  .sc-copy{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:.78rem;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0}
+  .sc-copy:hover{background:var(--accent-hover)}
+  .sc-memo-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .sc-memo-name{font-size:.85rem;font-weight:500;flex:1;min-width:100px}
+  .sc-memo-id{font-family:'DM Mono',monospace;font-size:.75rem;color:var(--accent);background:var(--bg);padding:3px 8px;border-radius:5px;border:1px solid var(--border)}
+  .sc-steps{font-size:.82rem;line-height:1.7;color:var(--text);padding-left:20px}
+  .sc-steps li{margin-bottom:6px}
+  .sc-steps code{font-family:'DM Mono',monospace;font-size:.75rem;background:var(--bg);padding:1px 5px;border-radius:4px;border:1px solid var(--border)}
 </style>

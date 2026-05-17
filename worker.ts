@@ -551,4 +551,48 @@ app.delete('/memos/:id/files/:filename{.+}', async (c) => {
   return c.json({ ok: true })
 })
 
+// ── iOS Shortcut quick-capture ────────────────────────────────────────────────
+// POST /quick-capture?t=TOKEN  { memo_id, type:"text"|"image", content?, data?, filename?, mime? }
+
+app.post('/quick-capture', async (c) => {
+  const db = drizzle(c.env.MEMO_D1)
+  const body = await c.req.json()
+  const { memo_id, type, content, data, filename, mime } = body
+
+  const [row] = await db.select({ id: memos.id, cover_file: memos.cover_file })
+    .from(memos).where(and(eq(memos.memo_id, String(memo_id || '')), notDeleted)).limit(1)
+  if (!row) return c.json({ error: 'not_found' }, 404)
+  const id = row.id
+
+  if (type === 'text' && content) {
+    const raw = String(content).trim()
+    const firstLine = raw.split('\n')[0].trim().slice(0, 60) || 'Capture'
+    const htmlContent = raw.split('\n').map(l => l.trim() ? `<p>${l.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>` : '<br>').join('')
+
+    const obj = await c.env.MEMO_R2.get(pfx(id) + '_snippets')
+    let snippets: any[] = []
+    if (obj) { try { snippets = JSON.parse(await obj.text()) } catch {} }
+    snippets.unshift({ id: crypto.randomUUID(), title: firstLine, content: htmlContent, created_at: nowISO() })
+    await c.env.MEMO_R2.put(pfx(id) + '_snippets', JSON.stringify(snippets), { httpMetadata: { contentType: 'application/json' } })
+    return c.json({ ok: true, type: 'clip' })
+  }
+
+  if (type === 'image' && data) {
+    const clean = String(data).replace(/\s/g, '')
+    const binary = atob(clean)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+    const ext = String(mime || 'image/jpeg').split('/')[1]?.replace('jpeg', 'jpg') || 'jpg'
+    const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
+    const key = String(filename || `capture-${ts}.${ext}`).replace(/[^a-zA-Z0-9._\-]/g, '_')
+    await c.env.MEMO_R2.put(pfx(id) + key, bytes, { httpMetadata: { contentType: String(mime || 'image/jpeg') } })
+    if (!row.cover_file && isImageKey(key)) {
+      await db.update(memos).set({ cover_file: key }).where(eq(memos.id, id))
+    }
+    return c.json({ ok: true, type: 'file', key })
+  }
+
+  return c.json({ error: 'missing type or content' }, 400)
+})
+
 export default app
