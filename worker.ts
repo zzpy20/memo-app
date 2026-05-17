@@ -639,11 +639,8 @@ app.post('/quick-capture-file', async (c) => {
   const db = drizzle(c.env.MEMO_D1)
   const memo_id = c.req.query('memo_id') || ''
   const fname   = c.req.query('filename') || ''
-  // Prefer Content-Type header (Shortcuts sets this automatically from the file),
-  // fall back to ?mime= query param (strip any accidental quotes), then octet-stream
-  const ctHeader = (c.req.header('Content-Type') || '').split(';')[0].trim()
-  const qMime    = (c.req.query('mime') || '').replace(/['"]/g, '').trim()
-  const mime     = ctHeader || qMime || 'application/octet-stream'
+  // Use ?mime= query param (set explicitly in Shortcuts URL) as the source of truth
+  const mime = (c.req.query('mime') || '').replace(/['"]/g, '').trim() || 'application/octet-stream'
 
   const [row] = await db.select({ id: memos.id, cover_file: memos.cover_file })
     .from(memos).where(and(eq(memos.memo_id, memo_id), notDeleted)).limit(1)
