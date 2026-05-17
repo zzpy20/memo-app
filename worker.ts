@@ -41,9 +41,32 @@ const MIME_MAP: Record<string, string> = {
   doc: 'application/msword',
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 }
+// Reverse map: mime type → preferred extension
+const MIME_EXT: Record<string, string> = {
+  'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif',
+  'image/webp': 'webp', 'image/avif': 'avif', 'image/svg+xml': 'svg', 'image/bmp': 'bmp',
+  'application/pdf': 'pdf',
+  'video/mp4': 'mp4', 'video/quicktime': 'mov', 'video/webm': 'webm',
+  'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'audio/wav': 'wav', 'audio/ogg': 'ogg',
+  'text/plain': 'txt', 'text/markdown': 'md',
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+}
 function mimeFromFilename(filename: string, fallback: string): string {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
   return MIME_MAP[ext] || fallback
+}
+function resolveFileKey(rawFilename: string, mimeStr: string, ts: string): string {
+  // Sanitise and strip leading/trailing dots
+  const safe = String(rawFilename || '').replace(/[^a-zA-Z0-9._\-]/g, '_').replace(/^[._]+|[._]+$/g, '')
+  const base = safe || `capture-${ts}`
+  // Check if the name already has a recognised extension
+  const existingExt = base.includes('.') ? base.split('.').pop()!.toLowerCase() : ''
+  const knownExt = existingExt && MIME_MAP[existingExt]
+  if (knownExt) return base
+  // No valid extension — derive from mime type
+  const ext = MIME_EXT[mimeStr] || 'bin'
+  return `${base}.${ext}`
 }
 
 function sanitizeTags(raw: unknown): string {
@@ -598,9 +621,8 @@ app.post('/quick-capture', async (c) => {
     const bytes = new Uint8Array(binary.length)
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
     const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
-    const rawKey = String(filename || `capture-${ts}`)
-    const key = rawKey.replace(/[^a-zA-Z0-9._\-]/g, '_')
-    const mimeStr = mimeFromFilename(key, String(mime || 'application/octet-stream'))
+    const mimeStr = String(mime || 'application/octet-stream')
+    const key = resolveFileKey(String(filename || ''), mimeStr, ts)
     await c.env.MEMO_R2.put(pfx(id) + key, bytes, { httpMetadata: { contentType: mimeStr } })
     if (!row.cover_file && isImageKey(key)) {
       await db.update(memos).set({ cover_file: key }).where(eq(memos.id, id))
