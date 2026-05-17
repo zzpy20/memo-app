@@ -92,6 +92,14 @@ async function loadFiles() {
   renderFileList(); renderGallery(); renderCoverSelect()
   const total = allFiles.reduce((s: number, f: any) => s + f.size, 0)
   const fb = document.getElementById('fb-size'); if (fb) fb.textContent = allFiles.length ? fmtSize(total) : ''
+
+  if (memo && !memo.cover_file) {
+    const firstImg = allFiles.find((f: any) => !f.key.startsWith('_') && isImg(f.key))
+    if (firstImg) {
+      memo.cover_file = firstImg.key
+      api('/memos/' + memoId + '/cover', { method: 'PATCH', body: JSON.stringify({ cover_file: firstImg.key }), headers: { 'Content-Type': 'application/json' } }).catch(() => {})
+    }
+  }
 }
 
 async function loadMeta() {

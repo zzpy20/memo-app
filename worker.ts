@@ -28,6 +28,9 @@ function newMemoId() {
 
 function nowISO() { return new Date().toISOString() }
 
+const IMG_RE = /\.(jpe?g|png|gif|webp|avif|bmp|svg)$/i
+function isImageKey(key: string) { return IMG_RE.test(key) }
+
 function sanitizeTags(raw: unknown): string {
   const arr = Array.isArray(raw) ? raw : []
   return JSON.stringify(arr.map(t => String(t).trim().toLowerCase()).filter(Boolean))
@@ -343,6 +346,13 @@ app.put('/memos/:id', async (c) => {
   return c.json({ ok: true })
 })
 
+app.patch('/memos/:id/cover', async (c) => {
+  const db = drizzle(c.env.MEMO_D1)
+  const { cover_file } = await c.req.json()
+  await db.update(memos).set({ cover_file: String(cover_file || '') }).where(eq(memos.id, c.req.param('id')))
+  return c.json({ ok: true })
+})
+
 app.delete('/memos/:id', async (c) => {
   const db = drizzle(c.env.MEMO_D1)
   const id = c.req.param('id')
@@ -460,6 +470,15 @@ app.post('/memos/:id/files', async (c) => {
   const safeName = file.name.replace(/\//g, '_')
   const relKey = (folder ? folder + '/' : '') + safeName
   await c.env.MEMO_R2.put(pfx(id) + relKey, file.stream(), { httpMetadata: { contentType: file.type || 'application/octet-stream' } })
+
+  if (isImageKey(relKey)) {
+    const db = drizzle(c.env.MEMO_D1)
+    const [row] = await db.select({ cover_file: memos.cover_file }).from(memos).where(eq(memos.id, id)).limit(1)
+    if (row && !row.cover_file) {
+      await db.update(memos).set({ cover_file: relKey }).where(eq(memos.id, id))
+    }
+  }
+
   return c.json({ ok: true, key: relKey })
 })
 
@@ -487,6 +506,13 @@ app.post('/memos/:id/trash', async (c) => {
   if (!obj) return c.json({ error: 'not_found' }, 404)
   await c.env.MEMO_R2.put(pfx(id) + '_trash/' + trashName, obj.body, { httpMetadata: obj.httpMetadata })
   await c.env.MEMO_R2.delete(pfx(id) + key)
+
+  const db = drizzle(c.env.MEMO_D1)
+  const [row] = await db.select({ cover_file: memos.cover_file }).from(memos).where(eq(memos.id, id)).limit(1)
+  if (row?.cover_file === key) {
+    await db.update(memos).set({ cover_file: '' }).where(eq(memos.id, id))
+  }
+
   return c.json({ ok: true, trashKey: '_trash/' + trashName })
 })
 
@@ -514,7 +540,14 @@ app.get('/memos/:id/files/:filename{.+}', async (c) => {
 })
 
 app.delete('/memos/:id/files/:filename{.+}', async (c) => {
-  await c.env.MEMO_R2.delete(pfx(c.req.param('id')) + c.req.param('filename'))
+  const id = c.req.param('id')
+  const filename = c.req.param('filename')
+  await c.env.MEMO_R2.delete(pfx(id) + filename)
+  const db = drizzle(c.env.MEMO_D1)
+  const [row] = await db.select({ cover_file: memos.cover_file }).from(memos).where(eq(memos.id, id)).limit(1)
+  if (row?.cover_file === filename) {
+    await db.update(memos).set({ cover_file: '' }).where(eq(memos.id, id))
+  }
   return c.json({ ok: true })
 })
 
