@@ -633,4 +633,30 @@ app.post('/quick-capture', async (c) => {
   return c.json({ error: 'missing type or content' }, 400)
 })
 
+// Raw binary file upload — avoids base64 entirely, called from Shortcuts Share Sheet
+// POST /quick-capture-file?t=TOKEN&memo_id=...&mime=image/jpeg&filename=IMG_4599
+app.post('/quick-capture-file', async (c) => {
+  const db = drizzle(c.env.MEMO_D1)
+  const memo_id = c.req.query('memo_id') || ''
+  const mime    = c.req.query('mime') || 'application/octet-stream'
+  const fname   = c.req.query('filename') || ''
+
+  const [row] = await db.select({ id: memos.id, cover_file: memos.cover_file })
+    .from(memos).where(and(eq(memos.memo_id, memo_id), notDeleted)).limit(1)
+  if (!row) return c.json({ error: 'not_found' }, 404)
+
+  const id  = row.id
+  const ts  = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
+  const key = resolveFileKey(fname, mime, ts)
+
+  const buf = await c.req.arrayBuffer()
+  await c.env.MEMO_R2.put(pfx(id) + key, buf, { httpMetadata: { contentType: mime } })
+
+  if (!row.cover_file && isImageKey(key)) {
+    await db.update(memos).set({ cover_file: key }).where(eq(memos.id, id))
+  }
+
+  return c.json({ ok: true, key })
+})
+
 export default app
