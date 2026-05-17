@@ -31,6 +31,21 @@ function nowISO() { return new Date().toISOString() }
 const IMG_RE = /\.(jpe?g|png|gif|webp|avif|bmp|svg)$/i
 function isImageKey(key: string) { return IMG_RE.test(key) }
 
+const MIME_MAP: Record<string, string> = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif',
+  webp: 'image/webp', avif: 'image/avif', svg: 'image/svg+xml', bmp: 'image/bmp',
+  pdf: 'application/pdf',
+  mp4: 'video/mp4', mov: 'video/quicktime', m4v: 'video/mp4', webm: 'video/webm',
+  mp3: 'audio/mpeg', m4a: 'audio/mp4', wav: 'audio/wav', ogg: 'audio/ogg',
+  txt: 'text/plain', md: 'text/markdown',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+}
+function mimeFromFilename(filename: string, fallback: string): string {
+  const ext = filename.split('.').pop()?.toLowerCase() || ''
+  return MIME_MAP[ext] || fallback
+}
+
 function sanitizeTags(raw: unknown): string {
   const arr = Array.isArray(raw) ? raw : []
   return JSON.stringify(arr.map(t => String(t).trim().toLowerCase()).filter(Boolean))
@@ -582,11 +597,10 @@ app.post('/quick-capture', async (c) => {
     const binary = atob(clean)
     const bytes = new Uint8Array(binary.length)
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-    const mimeStr = String(mime || (type === 'image' ? 'image/jpeg' : 'application/octet-stream'))
-    const extFromMime = mimeStr.split('/')[1]?.replace('jpeg', 'jpg').replace('quicktime', 'mov') || 'bin'
     const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
-    const rawKey = String(filename || `capture-${ts}.${extFromMime}`)
+    const rawKey = String(filename || `capture-${ts}`)
     const key = rawKey.replace(/[^a-zA-Z0-9._\-]/g, '_')
+    const mimeStr = mimeFromFilename(key, String(mime || 'application/octet-stream'))
     await c.env.MEMO_R2.put(pfx(id) + key, bytes, { httpMetadata: { contentType: mimeStr } })
     if (!row.cover_file && isImageKey(key)) {
       await db.update(memos).set({ cover_file: key }).where(eq(memos.id, id))
