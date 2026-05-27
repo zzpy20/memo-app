@@ -217,7 +217,7 @@ onMount(async () => {
 body{font-family:'DM Sans',sans-serif;background:#f5f5f4;color:#1c1917;min-height:100vh}
 .center{display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:1rem;color:#78716c}
 .error{color:#ef4444}
-.page{max-width:720px;margin:0 auto;padding:32px 20px 80px}
+.page{max-width:1000px;margin:0 auto;padding:32px 20px 80px}
 .memo-header{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px}
 .cover{height:180px;background-size:cover;background-position:center}
 .header-body{padding:24px 28px}
