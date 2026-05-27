@@ -866,8 +866,8 @@ async function emailNote() {
         memoUrl: window.location.href,
       })
     })
-    emailStatus = r.ok ? '✓ Sent!' : '✗ Failed'
-  } catch { emailStatus = '✗ Failed' }
+    if (r.ok) { emailStatus = '✓ Sent!' } else { const e = await r.json().catch(() => ({})) as any; console.error('email failed:', e); emailStatus = '✗ ' + (e?.error || r.status) }
+  } catch (e) { console.error('email error:', e); emailStatus = '✗ Failed' }
   emailSending = false
   setTimeout(() => { emailStatus = '' }, 3000)
 }
