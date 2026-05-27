@@ -606,15 +606,13 @@ async function openShare() {
   shareOpen = true
   if (shareToken === null) {
     shareLoading = true
-    try { const d = await (await api('/memos/' + memoId + '/share')).json(); shareToken = d.token } catch {}
+    try {
+      const d = await (await api('/memos/' + memoId + '/share')).json()
+      if (d.token) { shareToken = d.token }
+      else { const g = await (await api('/memos/' + memoId + '/share', { method: 'POST' })).json(); shareToken = g.token }
+    } catch {}
     shareLoading = false
   }
-}
-
-async function generateShareLink() {
-  shareLoading = true
-  try { const d = await (await api('/memos/' + memoId + '/share', { method: 'POST' })).json(); shareToken = d.token } catch {}
-  shareLoading = false
 }
 
 async function revokeShare() {
@@ -974,7 +972,7 @@ onDestroy(() => {
       <button class="share-popup-close" onclick={() => shareOpen = false}>✕</button>
       <div class="share-popup-title">Share memo</div>
       {#if shareLoading}
-        <div class="share-popup-info">Loading…</div>
+        <div class="share-popup-info">Generating link…</div>
       {:else if shareToken}
         <div class="share-popup-info">Anyone with this link can view (read-only)</div>
         <input class="share-popup-url" readonly value={window.location.origin + '/share?token=' + shareToken}>
@@ -983,8 +981,7 @@ onDestroy(() => {
           <button class="share-popup-btn danger" onclick={revokeShare}>Revoke</button>
         </div>
       {:else}
-        <div class="share-popup-info">Generate a read-only link to share this memo</div>
-        <button class="share-popup-btn" onclick={generateShareLink}>Generate link</button>
+        <div class="share-popup-info">Failed to generate link.</div>
       {/if}
     </div>
     {/if}
