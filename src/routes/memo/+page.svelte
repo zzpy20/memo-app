@@ -32,6 +32,14 @@ let uploadLabel = $state('')
 let shareToken = $state<string | null>(null)
 let shareOpen = $state(false)
 let shareLoading = $state(false)
+
+let calOpen = $state(false)
+let calDate = $state('')
+let calTime = $state('')
+let calDur = $state('30')
+let calCal = $state('default')
+let calCallId = $state('')
+let calSmsId = $state('')
 let _uploadXhrs: XMLHttpRequest[] = []
 const MAX_UPLOAD_MB = 100
 const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
@@ -632,6 +640,40 @@ function copyShareLink() {
   setTimeout(() => { shareCopied = false }, 2000)
 }
 
+function openCal() {
+  if (!calDate) {
+    const now = new Date()
+    now.setHours(now.getHours() + 1, 0, 0, 0)
+    calDate = now.toISOString().slice(0, 10)
+    calTime = now.toTimeString().slice(0, 5)
+  }
+  calCallId = localStorage.getItem('gcal_call_id') || ''
+  calSmsId  = localStorage.getItem('gcal_sms_id')  || ''
+  calOpen = true
+}
+
+function addToGCal() {
+  const title = (document.getElementById('title-input') as HTMLInputElement)?.value.trim() || 'Untitled'
+  const div = document.createElement('div'); div.innerHTML = noteEditor?.innerHTML || ''
+  const plain = (div.innerText || '').trim().replace(/\s+/g, ' ')
+  const words = plain.split(' ')
+  const desc = (words.length > 200 ? words.slice(0, 200).join(' ') + '…' : plain)
+
+  const start = calDate.replace(/-/g, '') + 'T' + calTime.replace(':', '') + '00'
+  const endDt = new Date(calDate + 'T' + calTime)
+  endDt.setMinutes(endDt.getMinutes() + parseInt(calDur))
+  const end = endDt.toISOString().slice(0, 10).replace(/-/g, '') + 'T' + endDt.toTimeString().slice(0, 5).replace(':', '') + '00'
+
+  const params = new URLSearchParams({ action: 'TEMPLATE', text: title, details: desc, dates: start + '/' + end })
+  const id = calCal === 'call' ? calCallId : calCal === 'sms' ? calSmsId : ''
+  if (id) params.set('calid', id)
+  if (calCal === 'call') localStorage.setItem('gcal_call_id', calCallId)
+  if (calCal === 'sms')  localStorage.setItem('gcal_sms_id',  calSmsId)
+
+  window.open('https://calendar.google.com/calendar/render?' + params.toString(), '_blank')
+  calOpen = false
+}
+
 async function copyLink() {
   const title = (document.getElementById('title-input') as HTMLInputElement).value.trim() || 'Untitled'
   await navigator.clipboard.writeText(title + '\n' + window.location.href)
@@ -967,6 +1009,42 @@ onDestroy(() => {
   <button class="btn-icon" data-tip="Export note" onclick={exportNote}>↓</button>
   <button class="btn-icon" data-tip="Print label" onclick={printLabel}>🏷</button>
   <button class="btn-icon" data-tip="Move to trash" onclick={trashMemo}>🗑</button>
+  <div style="position:relative">
+    <button class="btn-icon" data-tip="Add to Google Calendar" onclick={openCal}>📅</button>
+    {#if calOpen}
+    <div class="share-popup" style="width:300px" onclick={(e) => e.stopPropagation()}>
+      <button class="share-popup-close" onclick={() => calOpen = false}>✕</button>
+      <div class="share-popup-title">Add to Google Calendar</div>
+      <div class="cal-row"><label class="cal-label">Date</label><input type="date" class="cal-input" bind:value={calDate}></div>
+      <div class="cal-row"><label class="cal-label">Time</label><input type="time" class="cal-input" bind:value={calTime}></div>
+      <div class="cal-row"><label class="cal-label">Duration</label>
+        <select class="cal-input" bind:value={calDur}>
+          <option value="15">15 min</option>
+          <option value="30">30 min</option>
+          <option value="60">1 hour</option>
+          <option value="120">2 hours</option>
+        </select>
+      </div>
+      <div class="cal-row"><label class="cal-label">Calendar</label>
+        <select class="cal-input" bind:value={calCal}>
+          <option value="default">Default</option>
+          <option value="call">Call</option>
+          <option value="sms">SMS</option>
+        </select>
+      </div>
+      {#if calCal === 'call' || calCal === 'sms'}
+      <div class="cal-row" style="align-items:flex-start;flex-direction:column;gap:4px">
+        <label class="cal-label" style="width:auto">{calCal === 'call' ? 'Call' : 'SMS'} calendar ID</label>
+        <input type="text" class="cal-input" style="width:100%" placeholder="abc@group.calendar.google.com"
+          value={calCal === 'call' ? calCallId : calSmsId}
+          oninput={(e) => calCal === 'call' ? (calCallId = e.currentTarget.value) : (calSmsId = e.currentTarget.value)}>
+        <div class="share-popup-info" style="margin:0">Google Calendar → Settings → [calendar name] → Calendar ID</div>
+      </div>
+      {/if}
+      <button class="share-popup-btn" style="width:100%;margin-top:10px" onclick={addToGCal}>Open Google Calendar ↗</button>
+    </div>
+    {/if}
+  </div>
   <div style="position:relative">
     <button class="header-btn" onclick={openShare} title="Share">↗ Share</button>
     {#if shareOpen}
@@ -1448,4 +1526,8 @@ onDestroy(() => {
   .bulk-bar{height:auto;padding:10px 16px;flex-wrap:wrap;gap:8px}
   .modal-box{width:calc(100vw - 32px)!important;max-width:none!important}
 }
+.cal-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.cal-label{font-size:.78rem;color:var(--muted);width:68px;flex-shrink:0}
+.cal-input{flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;font-family:inherit;color:var(--text);background:var(--bg);outline:none}
+.cal-input:focus{border-color:var(--accent)}
 </style>
