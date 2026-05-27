@@ -857,7 +857,15 @@ async function emailNote() {
   if (emailSending) return
   emailSending = true; emailStatus = 'Sending…'
   try {
-    const r = await api('/memos/' + memoId + '/email', { method: 'POST', headers: { 'Content-Type': 'text/html' }, body: buildExportHtml() })
+    const r = await api('/memos/' + memoId + '/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        exportHtml: buildExportHtml(),
+        noteHtml: noteEditor?.innerHTML.trim() || '',
+        memoUrl: window.location.href,
+      })
+    })
     emailStatus = r.ok ? '✓ Sent!' : '✗ Failed'
   } catch { emailStatus = '✗ Failed' }
   emailSending = false

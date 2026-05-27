@@ -254,9 +254,22 @@ app.put('/settings', async (c) => {
 
 app.post('/memos/:id/email', async (c) => {
   const db = drizzle(c.env.MEMO_D1)
-  const [row] = await db.select({ title: memos.title }).from(memos).where(eq(memos.id, c.req.param('id'))).limit(1)
+  const [row] = await db.select({ title: memos.title, memo_id: memos.memo_id }).from(memos).where(eq(memos.id, c.req.param('id'))).limit(1)
   if (!row) return c.json({ error: 'not found' }, 404)
-  const html = await c.req.text()
+  const { exportHtml, noteHtml, memoUrl } = await c.req.json() as { exportHtml: string, noteHtml: string, memoUrl: string }
+
+  const emailBody = `<!DOCTYPE html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1c1917;max-width:700px;margin:0 auto;padding:24px 20px">
+<p style="margin:0 0 16px"><a href="${memoUrl}" style="color:#6366f1;word-break:break-all">${memoUrl}</a></p>
+<hr style="border:none;border-top:1px solid #e7e5e4;margin:0 0 20px">
+<div style="font-size:.95rem;line-height:1.75">${noteHtml}</div>
+</body></html>`
+
+  const bytes = new TextEncoder().encode(exportHtml)
+  let binary = ''; const chunk = 8192
+  for (let i = 0; i < bytes.length; i += chunk) binary += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  const attachment = btoa(binary)
+  const filename = (row.memo_id || 'memo') + '.html'
+
   const r = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + c.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
@@ -264,7 +277,8 @@ app.post('/memos/:id/email', async (c) => {
       from: (c.env.RESEND_FROM || '').trim() || 'Memo <onboarding@resend.dev>',
       to: [c.env.OWNER_EMAIL],
       subject: 'Memo: ' + (row.title || 'Untitled'),
-      html,
+      html: emailBody,
+      attachments: [{ filename, content: attachment }],
     }),
   })
   if (!r.ok) return c.json({ error: await r.text() }, 502)
