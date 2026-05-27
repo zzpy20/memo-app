@@ -261,7 +261,7 @@ app.post('/memos/:id/email', async (c) => {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + c.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: c.env.RESEND_FROM || 'Memo <onboarding@resend.dev>',
+      from: (c.env.RESEND_FROM || '').trim() || 'Memo <onboarding@resend.dev>',
       to: [c.env.OWNER_EMAIL],
       subject: 'Memo: ' + (row.title || 'Untitled'),
       html,
