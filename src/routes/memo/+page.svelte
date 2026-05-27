@@ -640,16 +640,19 @@ function copyShareLink() {
   setTimeout(() => { shareCopied = false }, 2000)
 }
 
-function openCal() {
+async function openCal() {
   if (!calDate) {
     const now = new Date()
     now.setHours(now.getHours() + 1, 0, 0, 0)
     calDate = now.toISOString().slice(0, 10)
     calTime = now.toTimeString().slice(0, 5)
   }
-  calCallId = localStorage.getItem('gcal_call_id') || ''
-  calSmsId  = localStorage.getItem('gcal_sms_id')  || ''
   calOpen = true
+  try {
+    const s = await (await api('/settings')).json() as Record<string, string>
+    calCallId = s.gcal_call_id || ''
+    calSmsId  = s.gcal_sms_id  || ''
+  } catch {}
 }
 
 function addToGCal() {
@@ -667,8 +670,8 @@ function addToGCal() {
   const params = new URLSearchParams({ action: 'TEMPLATE', text: title, details: desc, dates: start + '/' + end })
   const id = calCal === 'call' ? calCallId : calCal === 'sms' ? calSmsId : ''
   if (id) params.set('calid', id)
-  if (calCal === 'call') localStorage.setItem('gcal_call_id', calCallId)
-  if (calCal === 'sms')  localStorage.setItem('gcal_sms_id',  calSmsId)
+  if (calCal === 'call' && calCallId) api('/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gcal_call_id: calCallId }) }).catch(() => {})
+  if (calCal === 'sms'  && calSmsId)  api('/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gcal_sms_id:  calSmsId  }) }).catch(() => {})
 
   window.open('https://calendar.google.com/calendar/render?' + params.toString(), '_blank')
   calOpen = false
@@ -824,7 +827,7 @@ function htmlToMd(html: string): string {
   return walk(div).replace(/\n{3,}/g, '\n\n').trim()
 }
 
-function exportNote() {
+function buildExportHtml(): string {
   noteEditor.querySelectorAll('input[type="checkbox"]').forEach((cb: Element) => { if ((cb as HTMLInputElement).checked) cb.setAttribute('checked', ''); else cb.removeAttribute('checked') })
   const title = (document.getElementById('title-input') as HTMLInputElement).value.trim() || 'Untitled'
   const desc = (document.getElementById('desc-input') as HTMLTextAreaElement).value.trim()
@@ -836,9 +839,29 @@ function exportNote() {
   const linksSection = (links as any[]).length ? `<section class="links-section"><h2 class="section-label">Links</h2>${(links as any[]).map((l: any) => `<a class="link-item" href="${esc(l.url)}" target="_blank">${esc(l.label || l.url)}</a>`).join('')}</section>` : ''
   const visibleFiles = allFiles.filter((f: any) => !f.key.startsWith('_'))
   const filesSection = visibleFiles.length ? `<section class="files-section"><h2 class="section-label">Files (${visibleFiles.length})</h2><div class="file-list">${visibleFiles.map((f: any) => { const fm = meta.files[f.key] || {}; const folder = f.key.includes('/') ? f.key.split('/').slice(0,-1).join('/') : ''; return `<div class="file-row"><div class="file-name">${esc(basename(f.key))}</div><div class="file-meta-row">${folder ? `<span class="file-folder">${esc(folder)}</span>` : ''}<span>${fmtSize(f.size)}</span><span>${fmtDate(f.uploaded)}</span>${fm.caption ? `<span class="file-caption">${esc(fm.caption)}</span>` : ''}</div></div>` }).join('')}</div></section>` : ''
-  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${esc(title)}</title><style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f4;color:#1c1917;min-height:100vh;padding:40px 24px 80px}.page{max-width:1000px;margin:0 auto}.memo-header{background:#fff;border-radius:14px;padding:32px 36px 28px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px}.memo-title{font-size:2rem;font-weight:700;line-height:1.2;margin-bottom:10px}.memo-desc{font-size:1rem;color:#57534e;margin-bottom:16px;line-height:1.5}.memo-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:.82rem;color:#78716c}.tags{display:flex;flex-wrap:wrap;gap:6px}.tag{background:#ede9fe;color:#6366f1;padding:2px 10px;border-radius:12px;font-size:.78rem;font-weight:500}.memo-id{font-family:monospace;font-size:.75rem;color:#a8a29e}.card{background:#fff;border-radius:14px;padding:28px 36px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px}.section-label{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#78716c;margin-bottom:18px}.note-content{font-size:.95rem;line-height:1.75;overflow-x:auto}.note-content h2{font-size:1.35rem;font-weight:700;margin:16px 0 6px}.note-content h3{font-size:1.05rem;font-weight:600;margin:12px 0 4px}.note-content ul,.note-content ol{padding-left:22px;margin:6px 0}.note-content hr{border:none;border-top:2px dashed #d4d4d4;margin:18px 0}.note-content input[type="checkbox"]{width:14px;height:14px;margin-right:4px;vertical-align:middle;accent-color:#6366f1}.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.section-hdr .section-label{margin-bottom:0}.expand-all-btn{background:none;border:1px solid #e7e5e4;border-radius:6px;padding:4px 12px;font-size:.75rem;color:#78716c;cursor:pointer;font-family:inherit}.expand-all-btn:hover{border-color:#6366f1;color:#6366f1}.clips-toc{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}.clips-toc a{color:#6366f1;font-size:.82rem;text-decoration:none;background:#ede9fe;padding:3px 10px;border-radius:10px}.clip-card{border:1px solid #e7e5e4;border-radius:10px;overflow:hidden;margin-bottom:14px}.clip-summary{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#fafaf9;cursor:pointer;list-style:none;gap:12px}.clip-summary::-webkit-details-marker{display:none}.clip-title{font-weight:600;font-size:.9rem}.clip-ts{font-size:.72rem;color:#78716c;flex-shrink:0}.clip-body{padding:16px;font-size:.88rem;line-height:1.7;overflow-x:auto;border-top:1px solid #e7e5e4}.file-list{display:flex;flex-direction:column}.file-row{padding:10px 0;border-bottom:1px solid #f0eeec}.file-row:last-child{border-bottom:none}.file-name{font-size:.88rem;font-weight:500;color:#1c1917;margin-bottom:3px}.file-meta-row{display:flex;flex-wrap:wrap;gap:8px;font-size:.75rem;color:#78716c}.file-folder{color:#a8a29e;font-style:italic}.file-caption{color:#57534e;font-style:italic}.link-item{display:block;color:#6366f1;font-size:.9rem;margin-bottom:8px;word-break:break-all}.export-footer{text-align:center;font-size:.75rem;color:#a8a29e;margin-top:32px;line-height:2}.export-source-link{color:#a8a29e;text-decoration:none;border-bottom:1px dotted #a8a29e}.export-source-link:hover{color:#6366f1;border-color:#6366f1}@media print{body{background:#fff;padding:0}.card,.memo-header{box-shadow:none;border:1px solid #e7e5e4}.note-content hr{page-break-after:always;border:none;height:0;margin:0}}</style></head><body><div class="page"><div class="memo-header"><div class="memo-title">${esc(title)}</div>${desc ? `<div class="memo-desc">${esc(desc)}</div>` : ''}<div class="memo-meta">${created ? `<span>📅 ${esc(created)}</span>` : ''}${uid ? `<span>🏷 ${esc(uid)}</span>` : ''}${tags.length ? `<span class="tags">${tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</span>` : ''}${mId ? `<span class="memo-id">${esc(mId)}</span>` : ''}</div></div>${noteHtml ? `<div class="card"><div class="section-label">Notes</div><div class="note-content">${noteHtml}</div></div>` : ''}${linksSection ? `<div class="card">${linksSection}</div>` : ''}${clipsSection ? `<div class="card">${clipsSection}</div>` : ''}${filesSection ? `<div class="card">${filesSection}</div>` : ''}<div class="export-footer">Exported from Memo · ${esc(exportedAt)}${mId ? ' · ' + esc(mId) : ''}<br><a class="export-source-link" href="${esc(window.location.href)}" target="_blank">View live memo ↗</a></div></div></body></html>`
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${esc(title)}</title><style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f4;color:#1c1917;min-height:100vh;padding:40px 24px 80px}.page{max-width:1000px;margin:0 auto}.memo-header{background:#fff;border-radius:14px;padding:32px 36px 28px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px}.memo-title{font-size:2rem;font-weight:700;line-height:1.2;margin-bottom:10px}.memo-desc{font-size:1rem;color:#57534e;margin-bottom:16px;line-height:1.5}.memo-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:.82rem;color:#78716c}.tags{display:flex;flex-wrap:wrap;gap:6px}.tag{background:#ede9fe;color:#6366f1;padding:2px 10px;border-radius:12px;font-size:.78rem;font-weight:500}.memo-id{font-family:monospace;font-size:.75rem;color:#a8a29e}.card{background:#fff;border-radius:14px;padding:28px 36px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px}.section-label{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#78716c;margin-bottom:18px}.note-content{font-size:.95rem;line-height:1.75;overflow-x:auto}.note-content h2{font-size:1.35rem;font-weight:700;margin:16px 0 6px}.note-content h3{font-size:1.05rem;font-weight:600;margin:12px 0 4px}.note-content ul,.note-content ol{padding-left:22px;margin:6px 0}.note-content hr{border:none;border-top:2px dashed #d4d4d4;margin:18px 0}.note-content input[type="checkbox"]{width:14px;height:14px;margin-right:4px;vertical-align:middle;accent-color:#6366f1}.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.section-hdr .section-label{margin-bottom:0}.expand-all-btn{background:none;border:1px solid #e7e5e4;border-radius:6px;padding:4px 12px;font-size:.75rem;color:#78716c;cursor:pointer;font-family:inherit}.expand-all-btn:hover{border-color:#6366f1;color:#6366f1}.clips-toc{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}.clips-toc a{color:#6366f1;font-size:.82rem;text-decoration:none;background:#ede9fe;padding:3px 10px;border-radius:10px}.clip-card{border:1px solid #e7e5e4;border-radius:10px;overflow:hidden;margin-bottom:14px}.clip-summary{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#fafaf9;cursor:pointer;list-style:none;gap:12px}.clip-summary::-webkit-details-marker{display:none}.clip-title{font-weight:600;font-size:.9rem}.clip-ts{font-size:.72rem;color:#78716c;flex-shrink:0}.clip-body{padding:16px;font-size:.88rem;line-height:1.7;overflow-x:auto;border-top:1px solid #e7e5e4}.file-list{display:flex;flex-direction:column}.file-row{padding:10px 0;border-bottom:1px solid #f0eeec}.file-row:last-child{border-bottom:none}.file-name{font-size:.88rem;font-weight:500;color:#1c1917;margin-bottom:3px}.file-meta-row{display:flex;flex-wrap:wrap;gap:8px;font-size:.75rem;color:#78716c}.file-folder{color:#a8a29e;font-style:italic}.file-caption{color:#57534e;font-style:italic}.link-item{display:block;color:#6366f1;font-size:.9rem;margin-bottom:8px;word-break:break-all}.export-footer{text-align:center;font-size:.75rem;color:#a8a29e;margin-top:32px;line-height:2}.export-source-link{color:#a8a29e;text-decoration:none;border-bottom:1px dotted #a8a29e}.export-source-link:hover{color:#6366f1;border-color:#6366f1}@media print{body{background:#fff;padding:0}.card,.memo-header{box-shadow:none;border:1px solid #e7e5e4}.note-content hr{page-break-after:always;border:none;height:0;margin:0}}</style></head><body><div class="page"><div class="memo-header"><div class="memo-title">${esc(title)}</div>${desc ? `<div class="memo-desc">${esc(desc)}</div>` : ''}<div class="memo-meta">${created ? `<span>📅 ${esc(created)}</span>` : ''}${uid ? `<span>🏷 ${esc(uid)}</span>` : ''}${tags.length ? `<span class="tags">${tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</span>` : ''}${mId ? `<span class="memo-id">${esc(mId)}</span>` : ''}</div></div>${noteHtml ? `<div class="card"><div class="section-label">Notes</div><div class="note-content">${noteHtml}</div></div>` : ''}${linksSection ? `<div class="card">${linksSection}</div>` : ''}${clipsSection ? `<div class="card">${clipsSection}</div>` : ''}${filesSection ? `<div class="card">${filesSection}</div>` : ''}<div class="export-footer">Exported from Memo · ${esc(exportedAt)}${mId ? ' · ' + esc(mId) : ''}<br><a class="export-source-link" href="${esc(window.location.href)}" target="_blank">View live memo ↗</a></div></div></body></html>`
+}
+
+function exportNote() {
+  const html = buildExportHtml()
+  const title = (document.getElementById('title-input') as HTMLInputElement).value.trim() || 'Untitled'
+  const mId = memo?.memo_id || ''
   const slug = title.slice(0, 50).replace(/[^a-z0-9]/gi, '-').replace(/-+/g, '-').toLowerCase()
   const blob = new Blob([html], { type: 'text/html' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = (mId ? mId + '-' : '') + slug + '.html'; a.click(); URL.revokeObjectURL(a.href)
+}
+
+let emailSending = $state(false)
+let emailStatus = $state('')
+
+async function emailNote() {
+  if (emailSending) return
+  emailSending = true; emailStatus = 'Sending…'
+  try {
+    const r = await api('/memos/' + memoId + '/email', { method: 'POST', headers: { 'Content-Type': 'text/html' }, body: buildExportHtml() })
+    emailStatus = r.ok ? '✓ Sent!' : '✗ Failed'
+  } catch { emailStatus = '✗ Failed' }
+  emailSending = false
+  setTimeout(() => { emailStatus = '' }, 3000)
 }
 
 async function exportClips() {
@@ -1007,6 +1030,7 @@ onDestroy(() => {
   <button class="btn-icon" id="dup-btn" data-tip="Duplicate" onclick={duplicateMemo}>⧉</button>
   <button class="btn-icon" id="copy-link-btn" data-tip="Copy link" onclick={copyLink}>🔗</button>
   <button class="btn-icon" data-tip="Export note" onclick={exportNote}>↓</button>
+  <button class="btn-icon" data-tip={emailStatus || 'Email note to myself'} onclick={emailNote} disabled={emailSending} style={emailStatus.startsWith('✓') ? 'opacity:1;color:var(--success)' : emailStatus.startsWith('✗') ? 'opacity:1;color:var(--danger)' : ''}>✉</button>
   <button class="btn-icon" data-tip="Print label" onclick={printLabel}>🏷</button>
   <button class="btn-icon" data-tip="Move to trash" onclick={trashMemo}>🗑</button>
   <div style="position:relative">

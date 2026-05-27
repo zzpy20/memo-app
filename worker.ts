@@ -4,7 +4,7 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { drizzle } from 'drizzle-orm/d1'
 import { and, asc, desc, eq, isNotNull, isNull, like, ne, or, sql } from 'drizzle-orm'
-import { memos } from './src/db/schema'
+import { memos, settings } from './src/db/schema'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -12,6 +12,9 @@ type Bindings = {
   MEMO_D1: D1Database
   MEMO_R2: R2Bucket
   MEMO_AUTH_TOKEN: string
+  RESEND_API_KEY: string
+  RESEND_FROM: string
+  OWNER_EMAIL: string
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
@@ -228,6 +231,43 @@ app.post('/memos/:id/share', async (c) => {
 app.delete('/memos/:id/share', async (c) => {
   const db = drizzle(c.env.MEMO_D1)
   await db.update(memos).set({ share_token: null }).where(eq(memos.id, c.req.param('id')))
+  return c.json({ ok: true })
+})
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+
+app.get('/settings', async (c) => {
+  const { results } = await c.env.MEMO_D1.prepare('SELECT key, value FROM settings').all()
+  const obj: Record<string, string> = {}
+  for (const row of results as any[]) obj[row.key] = row.value
+  return c.json(obj)
+})
+
+app.put('/settings', async (c) => {
+  const data = await c.req.json() as Record<string, string>
+  const stmt = c.env.MEMO_D1.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)')
+  await Promise.all(Object.entries(data).map(([k, v]) => stmt.bind(k, String(v)).run()))
+  return c.json({ ok: true })
+})
+
+// ── Email ─────────────────────────────────────────────────────────────────────
+
+app.post('/memos/:id/email', async (c) => {
+  const db = drizzle(c.env.MEMO_D1)
+  const [row] = await db.select({ title: memos.title }).from(memos).where(eq(memos.id, c.req.param('id'))).limit(1)
+  if (!row) return c.json({ error: 'not found' }, 404)
+  const html = await c.req.text()
+  const r = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + c.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: c.env.RESEND_FROM || 'Memo <onboarding@resend.dev>',
+      to: [c.env.OWNER_EMAIL],
+      subject: 'Memo: ' + (row.title || 'Untitled'),
+      html,
+    }),
+  })
+  if (!r.ok) return c.json({ error: await r.text() }, 502)
   return c.json({ ok: true })
 })
 

@@ -19,3 +19,8 @@ export const memos = sqliteTable('memos', {
 
 export type Memo = typeof memos.$inferSelect
 export type NewMemo = typeof memos.$inferInsert
+
+export const settings = sqliteTable('settings', {
+  key:   text('key').primaryKey(),
+  value: text('value').notNull().default(''),
+})
