@@ -1030,7 +1030,7 @@ onDestroy(() => {
   <button class="btn-icon" id="dup-btn" data-tip="Duplicate" onclick={duplicateMemo}>⧉</button>
   <button class="btn-icon" id="copy-link-btn" data-tip="Copy link" onclick={copyLink}>🔗</button>
   <button class="btn-icon" data-tip="Export note" onclick={exportNote}>↓</button>
-  <button class="btn-icon" data-tip={emailStatus || 'Email note to myself'} onclick={emailNote} disabled={emailSending} style={emailStatus.startsWith('✓') ? 'opacity:1;color:var(--success)' : emailStatus.startsWith('✗') ? 'opacity:1;color:var(--danger)' : ''}>✉</button>
+  <button class="btn-icon email-btn" data-tip={emailStatus || 'Email note to myself'} onclick={emailNote} disabled={emailSending} style={emailStatus.startsWith('✓') ? 'opacity:1;color:var(--success)' : emailStatus.startsWith('✗') ? 'opacity:1;color:var(--danger)' : ''}>✉</button>
   <button class="btn-icon" data-tip="Print label" onclick={printLabel}>🏷</button>
   <button class="btn-icon" data-tip="Move to trash" onclick={trashMemo}>🗑</button>
   <div style="position:relative">
@@ -1361,6 +1361,7 @@ onDestroy(() => {
 #gsearch:focus{border-color:var(--accent)}
 .gsearch-drop{position:absolute;left:16px;right:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200;max-height:340px;overflow-y:auto}
 .btn-icon{background:none;border:none;cursor:pointer;padding:5px 7px;border-radius:7px;font-size:.95rem;opacity:.45;line-height:1;transition:opacity .1s;flex-shrink:0;position:relative}
+.email-btn{font-size:1.25rem;font-weight:700;padding:5px 9px;opacity:.6}
 .btn-icon:hover{opacity:1;background:var(--bg)}
 .btn-icon[data-tip]::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1c1917;color:#fff;font-size:.7rem;font-family:'DM Sans',sans-serif;white-space:nowrap;padding:3px 8px;border-radius:5px;pointer-events:none;opacity:0;transition:opacity .15s;z-index:500}
 .btn-icon[data-tip]:hover::after{opacity:1}
