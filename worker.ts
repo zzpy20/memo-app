@@ -256,7 +256,15 @@ app.post('/memos/:id/email', async (c) => {
   const db = drizzle(c.env.MEMO_D1)
   const [row] = await db.select({ title: memos.title, memo_id: memos.memo_id }).from(memos).where(eq(memos.id, c.req.param('id'))).limit(1)
   if (!row) return c.json({ error: 'not found' }, 404)
-  const { exportHtml, noteHtml, memoUrl } = await c.req.json() as { exportHtml: string, noteHtml: string, memoUrl: string }
+
+  let exportHtml: string, noteHtml: string, memoUrl: string
+  try {
+    const body = await c.req.json() as { exportHtml: string, noteHtml: string, memoUrl: string }
+    exportHtml = body.exportHtml; noteHtml = body.noteHtml; memoUrl = body.memoUrl
+  } catch (e) {
+    console.error('email: failed to parse body', e)
+    return c.json({ error: 'invalid request body' }, 400)
+  }
 
   const emailBody = `<!DOCTYPE html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1c1917;max-width:700px;margin:0 auto;padding:24px 20px">
 <p style="margin:0 0 16px"><a href="${memoUrl}" style="color:#6366f1;word-break:break-all">${memoUrl}</a></p>
@@ -270,18 +278,23 @@ app.post('/memos/:id/email', async (c) => {
   const attachment = btoa(binary)
   const filename = (row.memo_id || 'memo') + '.html'
 
+  const payload = {
+    from: (c.env.RESEND_FROM || '').trim() || 'Memo <onboarding@resend.dev>',
+    to: c.env.OWNER_EMAIL,
+    subject: 'Memo: ' + (row.title || 'Untitled'),
+    html: emailBody,
+    attachments: [{ filename, content: attachment }],
+  }
   const r = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + c.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      from: (c.env.RESEND_FROM || '').trim() || 'Memo <onboarding@resend.dev>',
-      to: [c.env.OWNER_EMAIL],
-      subject: 'Memo: ' + (row.title || 'Untitled'),
-      html: emailBody,
-      attachments: [{ filename, content: attachment }],
-    }),
+    body: JSON.stringify(payload),
   })
-  if (!r.ok) return c.json({ error: await r.text() }, 502)
+  if (!r.ok) {
+    const errText = await r.text()
+    console.error('resend error', r.status, errText)
+    return c.json({ error: errText }, 502)
+  }
   return c.json({ ok: true })
 })
 
