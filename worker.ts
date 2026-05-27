@@ -278,9 +278,16 @@ app.post('/memos/:id/email', async (c) => {
   const attachment = btoa(binary)
   const filename = (row.memo_id || 'memo') + '.html'
 
+  const { results: sRows } = await c.env.MEMO_D1.prepare('SELECT key, value FROM settings WHERE key IN (?,?)').bind('owner_email','resend_from').all()
+  const sMap: Record<string, string> = {}
+  for (const r2 of sRows as any[]) sMap[r2.key] = r2.value
+  const ownerEmail = (sMap.owner_email || (c.env.OWNER_EMAIL || '')).trim()
+  const resendFrom = (sMap.resend_from || (c.env.RESEND_FROM || '')).trim() || 'Memo <onboarding@resend.dev>'
+  if (!ownerEmail) return c.json({ error: 'owner_email not configured' }, 400)
+
   const payload = {
-    from: (c.env.RESEND_FROM || '').trim() || 'Memo <onboarding@resend.dev>',
-    to: c.env.OWNER_EMAIL,
+    from: resendFrom,
+    to: ownerEmail,
     subject: 'Memo: ' + (row.title || 'Untitled'),
     html: emailBody,
     attachments: [{ filename, content: attachment }],

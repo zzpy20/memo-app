@@ -40,6 +40,8 @@ let calDur = $state('30')
 let calCal = $state('default')
 let calCallId = $state('')
 let calSmsId = $state('')
+let ownerEmail = $state('')
+let resendFrom = $state('')
 let _uploadXhrs: XMLHttpRequest[] = []
 const MAX_UPLOAD_MB = 100
 const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
@@ -650,8 +652,10 @@ async function openCal() {
   calOpen = true
   try {
     const s = await (await api('/settings')).json() as Record<string, string>
-    calCallId = s.gcal_call_id || ''
-    calSmsId  = s.gcal_sms_id  || ''
+    calCallId  = s.gcal_call_id || ''
+    calSmsId   = s.gcal_sms_id  || ''
+    ownerEmail = s.owner_email  || ''
+    resendFrom = s.resend_from  || ''
   } catch {}
 }
 
@@ -670,8 +674,12 @@ function addToGCal() {
   const params = new URLSearchParams({ action: 'TEMPLATE', text: title, details: desc, dates: start + '/' + end })
   const id = calCal === 'call' ? calCallId : calCal === 'sms' ? calSmsId : ''
   if (id) params.set('calid', id)
-  if (calCal === 'call' && calCallId) api('/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gcal_call_id: calCallId }) }).catch(() => {})
-  if (calCal === 'sms'  && calSmsId)  api('/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gcal_sms_id:  calSmsId  }) }).catch(() => {})
+  const settingsPatch: Record<string,string> = {}
+  if (calCal === 'call' && calCallId) settingsPatch.gcal_call_id = calCallId
+  if (calCal === 'sms'  && calSmsId)  settingsPatch.gcal_sms_id  = calSmsId
+  if (ownerEmail) settingsPatch.owner_email = ownerEmail
+  if (resendFrom) settingsPatch.resend_from = resendFrom
+  if (Object.keys(settingsPatch).length) api('/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settingsPatch) }).catch(() => {})
 
   window.open('https://calendar.google.com/calendar/render?' + params.toString(), '_blank')
   calOpen = false
@@ -1073,6 +1081,10 @@ onDestroy(() => {
         <div class="share-popup-info" style="margin:0">Google Calendar → Settings → [calendar name] → Calendar ID</div>
       </div>
       {/if}
+      <hr style="border:none;border-top:1px solid var(--border);margin:10px 0">
+      <div class="share-popup-info" style="margin-bottom:6px">Email settings</div>
+      <div class="cal-row"><label class="cal-label">To email</label><input type="email" class="cal-input" placeholder="you@example.com" bind:value={ownerEmail}></div>
+      <div class="cal-row"><label class="cal-label">From email</label><input type="text" class="cal-input" placeholder="Memo <noreply@yourdomain.com>" bind:value={resendFrom}></div>
       <button class="share-popup-btn" style="width:100%;margin-top:10px" onclick={addToGCal}>Open Google Calendar ↗</button>
     </div>
     {/if}
