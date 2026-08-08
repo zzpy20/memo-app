@@ -17,6 +17,8 @@ let sortDir = 1
 let dragKey: string | null = null
 let allTagSuggestions: string[] = []
 let _noteTimer: ReturnType<typeof setTimeout> | null = null
+let _clipTimer: ReturnType<typeof setTimeout> | null = null
+let _clipDraftId: string | null = null
 let _savedRange: Range | null = null
 let _infoTimer: ReturnType<typeof setTimeout> | null = null
 let _gs_timer: ReturnType<typeof setTimeout> | null = null
@@ -778,14 +780,36 @@ async function saveSnippets() { try { await api('/memos/' + memoId + '/snippets'
 function showClipPanel() {
   const panel = document.getElementById('clip-panel')!; panel.style.display = ''
   clipTitleInput.value = ''; clipPasteArea.innerHTML = ''; clipTitleInput.focus()
+  _clipDraftId = null
   panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
 }
-function cancelClip() { document.getElementById('clip-panel')!.style.display = 'none' }
-async function saveClip() {
+function closeClipPanel() { document.getElementById('clip-panel')!.style.display = 'none' }
+async function cancelClip() {
+  clearTimeout(_clipTimer!)
+  if (_clipDraftId) {
+    const i = snippets.findIndex((s: any) => s.id === _clipDraftId)
+    if (i !== -1) { snippets.splice(i, 1); await saveSnippets(); renderSnippets() }
+    _clipDraftId = null
+  }
+  closeClipPanel()
+}
+async function autoSaveClip() {
   const title = clipTitleInput.value.trim() || 'Untitled clip'; const content = clipPasteArea.innerHTML
-  if (!clipPasteArea.innerText.trim() && !clipPasteArea.querySelector('img')) { clipPasteArea.focus(); return }
-  snippets.push({ id: crypto.randomUUID(), title, content, created_at: new Date().toISOString() })
-  await saveSnippets(); renderSnippets(); cancelClip()
+  if (!clipPasteArea.innerText.trim() && !clipPasteArea.querySelector('img')) return
+  if (_clipDraftId) {
+    const s = snippets.find((s: any) => s.id === _clipDraftId)
+    if (s) { s.title = title; s.content = content }
+  } else {
+    _clipDraftId = crypto.randomUUID()
+    snippets.push({ id: _clipDraftId, title, content, created_at: new Date().toISOString() })
+  }
+  await saveSnippets(); renderSnippets()
+}
+async function saveClip() {
+  clearTimeout(_clipTimer!)
+  await autoSaveClip()
+  if (!_clipDraftId) { clipPasteArea.focus(); return }
+  closeClipPanel()
 }
 
 function renderSnippets() {
@@ -971,10 +995,14 @@ onMount(() => {
     reader.onload = (ev: ProgressEvent<FileReader>) => { document.execCommand('insertHTML', false, `<img src="${ev.target!.result}" data-paste-img="1" style="max-width:100%;height:auto">`); saveNote() }
     reader.readAsDataURL(file)
   })
+  clipTitleInput.addEventListener('input', () => { clearTimeout(_clipTimer!); _clipTimer = setTimeout(autoSaveClip, 1200) })
+  clipTitleInput.addEventListener('blur', () => { clearTimeout(_clipTimer!); autoSaveClip() })
+  clipPasteArea.addEventListener('input', () => { clearTimeout(_clipTimer!); _clipTimer = setTimeout(autoSaveClip, 1200) })
+  clipPasteArea.addEventListener('blur', () => { clearTimeout(_clipTimer!); autoSaveClip() })
   clipPasteArea.addEventListener('paste', (e: ClipboardEvent) => {
     const imgItem = Array.from(e.clipboardData!.items).find(i => i.type.startsWith('image/')); if (!imgItem) return
     e.preventDefault(); const file = imgItem.getAsFile()!; const reader = new FileReader()
-    reader.onload = (ev: ProgressEvent<FileReader>) => { document.execCommand('insertHTML', false, `<img src="${ev.target!.result}" style="max-width:100%;height:auto">`) }
+    reader.onload = (ev: ProgressEvent<FileReader>) => { document.execCommand('insertHTML', false, `<img src="${ev.target!.result}" style="max-width:100%;height:auto">`); autoSaveClip() }
     reader.readAsDataURL(file)
   })
   noteEditor.addEventListener('click', (e: MouseEvent) => {
