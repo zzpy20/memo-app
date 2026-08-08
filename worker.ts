@@ -19,6 +19,8 @@ type Bindings = {
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
+const MAX_UPLOAD_BYTES = 100 * 1024 * 1024 // matches the client-side limit + Cloudflare Free plan R2 cap
+
 function newId() { return crypto.randomUUID() }
 
 function newMemoId() {
@@ -576,6 +578,7 @@ app.post('/memos/:id/files', async (c) => {
   const file = form.get('file')
   const folder = String(form.get('folder') || '').replace(/[^a-zA-Z0-9_\- ]/g, '').trim().slice(0, 50)
   if (!(file instanceof File)) return c.json({ error: 'no_file' }, 400)
+  if (file.size > MAX_UPLOAD_BYTES) return c.json({ error: 'file_too_large', maxBytes: MAX_UPLOAD_BYTES }, 413)
   const safeName = file.name.replace(/\//g, '_')
   const relKey = (folder ? folder + '/' : '') + safeName
   await c.env.MEMO_R2.put(pfx(id) + relKey, file.stream(), { httpMetadata: { contentType: file.type || 'application/octet-stream' } })
@@ -691,6 +694,7 @@ app.post('/quick-capture', async (c) => {
     const binary = atob(clean)
     const bytes = new Uint8Array(binary.length)
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+    if (bytes.length > MAX_UPLOAD_BYTES) return c.json({ error: 'file_too_large', maxBytes: MAX_UPLOAD_BYTES }, 413)
     const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
     const mimeStr = String(mime || 'application/octet-stream')
     const key = resolveFileKey(String(filename || ''), mimeStr, ts)
@@ -717,11 +721,15 @@ app.post('/quick-capture-file', async (c) => {
     .from(memos).where(and(eq(memos.memo_id, memo_id), notDeleted)).limit(1)
   if (!row) return c.json({ error: 'not_found' }, 404)
 
+  const contentLength = Number(c.req.header('Content-Length') || 0)
+  if (contentLength > MAX_UPLOAD_BYTES) return c.json({ error: 'file_too_large', maxBytes: MAX_UPLOAD_BYTES }, 413)
+
   const id  = row.id
   const ts  = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
   const key = resolveFileKey(fname, mime, ts)
 
   const buf = await c.req.arrayBuffer()
+  if (buf.byteLength > MAX_UPLOAD_BYTES) return c.json({ error: 'file_too_large', maxBytes: MAX_UPLOAD_BYTES }, 413)
   await c.env.MEMO_R2.put(pfx(id) + key, buf, { httpMetadata: { contentType: mime } })
 
   if (!row.cover_file && isImageKey(key)) {
