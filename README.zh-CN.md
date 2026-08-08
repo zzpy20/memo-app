@@ -201,6 +201,5 @@ wrangler d1 execute memo-db --file=schema.sql
 
 ## 已知遗留问题
 
-- `static/js/api.js` 和 `static/css/vars.css` 是迁移到 SvelteKit 之前、纯静态 HTML 版本遗留下来的文件 —— 属于死代码，`src/` 目录下没有任何地方引用它们。
 - 100 MB 的上传限制仅在前端强制执行；`worker.ts` 中没有服务端的文件大小校验。
 - 首页显示的 10 GB 存储用量数字只是一个展示用的标签，并非强制配额。

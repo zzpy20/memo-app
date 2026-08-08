@@ -201,6 +201,5 @@ Email (`OWNER_EMAIL`, `RESEND_API_KEY`, `RESEND_FROM`) is configured the same wa
 
 ## Known gaps
 
-- `static/js/api.js` and `static/css/vars.css` are leftovers from the pre-SvelteKit static-HTML version of this app — dead code, not referenced anywhere in `src/`.
 - The 100 MB upload limit is enforced client-side only; there's no server-side size check in `worker.ts`.
 - The 10 GB storage figure shown on the home page is a display label, not an enforced quota.
