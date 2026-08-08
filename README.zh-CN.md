@@ -115,9 +115,9 @@
 | `key` | TEXT 主键 | 例如 `gcal_call_id`、`gcal_sms_id` |
 | `value` | TEXT | |
 
-此外还有一个 `memos_fts` FTS5 虚拟表及其同步触发器，通过原生 SQL 管理（详见 `schema.sql` 及 `POST /search/rebuild`）。
+此外还有一个 `memos_fts` FTS5 虚拟表及其同步触发器，通过原生 SQL 管理（详见 `schema.sql` 及 `POST /search/rebuild`）—— Drizzle 不支持虚拟表，因此这部分是手写的，独立于 `drizzle/` 目录下的 migration 文件之外。
 
-> ⚠️ 根目录下的 `schema.sql` 和 `drizzle/0000_lethal_colonel_america.sql` 都**落后于** `src/db/schema.ts`——`share_token` 列和 `settings` 表已经存在于线上数据库和 `schema.ts` 中，但从未被生成对应的 Drizzle migration 文件记录下来。请以 `src/db/schema.ts` 为准；不要仅凭 `schema.sql` 从零搭建一个全新的 D1 数据库，还需手动补上缺失的列 / 表。
+`schema.sql` 是一个完整的从零搭建脚本（会先删除再重建所有表），需要手动与 `src/db/schema.ts` 保持同步；`drizzle/` 目录则为使用 `drizzle-kit migrate` 的场景保留了增量式的 migration 历史记录。目前两者描述的是同一个最终状态 —— 如果给 `schema.ts` 新增了列，请同时更新这两处。
 
 ### R2 —— 每个备忘录下的 key（前缀为 `memo-{uuid}/`）
 
@@ -169,7 +169,7 @@ sh deploy.sh
 wrangler d1 execute memo-db --file=schema.sql
 ```
 
-之后还需手动补充 `share_token` 列和 `settings` 表（参见上方数据模型部分的警告）——仅靠 `schema.sql` 不足以完成从零搭建。
+该脚本会一次性创建两张表（`memos`、`settings`）以及 FTS5 索引和触发器。
 
 部署了包含数据库结构变更的 worker 后，请在首页点击 **⟳ 重建索引**，重建 FTS5 搜索索引。
 

@@ -115,9 +115,9 @@ Two auth-gated Worker endpoints let a Shortcuts.app automation push content stra
 | `key` | TEXT PK | e.g. `gcal_call_id`, `gcal_sms_id` |
 | `value` | TEXT | |
 
-Plus a `memos_fts` FTS5 virtual table with sync triggers, managed via raw SQL (see `schema.sql` and `POST /search/rebuild`).
+Plus a `memos_fts` FTS5 virtual table with sync triggers, managed via raw SQL (see `schema.sql` and `POST /search/rebuild`) — Drizzle doesn't support virtual tables, so this part is hand-written and lives outside the `drizzle/` migrations.
 
-> ⚠️ `schema.sql` (root) and `drizzle/0000_lethal_colonel_america.sql` are both **behind** `src/db/schema.ts` — `share_token` and the `settings` table exist in the live database and in `schema.ts` but were never captured in a generated Drizzle migration. Treat `src/db/schema.ts` as the source of truth; don't bootstrap a fresh D1 database from `schema.sql` alone without also applying the missing columns/table by hand.
+`schema.sql` is a complete, from-scratch bootstrap script (drops and recreates everything) kept in sync with `src/db/schema.ts` by hand; `drizzle/` holds the incremental migration history for anyone using `drizzle-kit migrate` instead. Both currently describe the same end state — if you add a column to `schema.ts`, update both.
 
 ### R2 — keys per memo (prefix `memo-{uuid}/`)
 
@@ -169,7 +169,7 @@ Apply to D1 once on initial setup:
 wrangler d1 execute memo-db --file=schema.sql
 ```
 
-Then apply the `share_token` column and `settings` table by hand (see the data-model warning above) — `schema.sql` alone is not sufficient for a from-scratch setup.
+This creates both tables (`memos`, `settings`) and the FTS5 index/triggers in one shot.
 
 After deploying a worker with schema changes, click **⟳ Reindex** on the home page to rebuild the FTS5 search index.
 

@@ -3,6 +3,7 @@ DROP TRIGGER IF EXISTS memos_ad;
 DROP TRIGGER IF EXISTS memos_au;
 DROP TABLE IF EXISTS memos_fts;
 DROP TABLE IF EXISTS memos;
+DROP TABLE IF EXISTS settings;
 
 CREATE TABLE memos (
   id          TEXT PRIMARY KEY,
@@ -15,8 +16,15 @@ CREATE TABLE memos (
   pinned      INTEGER NOT NULL DEFAULT 0,
   links       TEXT NOT NULL DEFAULT '[]',
   search_text TEXT NOT NULL DEFAULT '',
+  share_token TEXT,
+  deleted_at  TEXT,
   created_at  TEXT NOT NULL,
   updated_at  TEXT NOT NULL
+);
+
+CREATE TABLE settings (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL DEFAULT ''
 );
 
 CREATE VIRTUAL TABLE memos_fts USING fts5(
