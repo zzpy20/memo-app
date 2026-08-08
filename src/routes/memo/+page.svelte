@@ -603,9 +603,10 @@ function changeFontSize(delta: number) { noteEditor.focus(); const cur = parseIn
 function applyTextColor(color: string) { noteEditor.focus(); if (_savedRange) { const sel = window.getSelection()!; sel.removeAllRanges(); sel.addRange(_savedRange) }; document.execCommand('foreColor', false, color); const cp = document.getElementById('color-preview'); if (cp) cp.style.color = color }
 function showHighlightMenu(e: Event) { showFloatMenu(e, [{ label: '🟡 Yellow', fn: `applyHighlight('#fef08a')` }, { label: '🟢 Green', fn: `applyHighlight('#bbf7d0')` }, { label: '🩷 Pink', fn: `applyHighlight('#fecdd3')` }, { label: '🔵 Blue', fn: `applyHighlight('#bfdbfe')` }, '---', { label: '✕ Remove', fn: `applyHighlight('transparent')` }]) }
 function applyHighlight(color: string) { noteEditor.focus(); if (!document.execCommand('hiliteColor', false, color)) document.execCommand('backColor', false, color) }
-function showFontMenu(e: Event) { showFloatMenu(e, [{ label: 'Menlo 11', fn: `applyMonoFont(11)` }, { label: 'Menlo 12', fn: `applyMonoFont(12)` }, '---', { label: '✕ Default font', fn: `applyMonoFont(0)` }]) }
-function applyMonoFont(px: number) {
-  noteEditor.focus()
+function showFontMenu(e: Event, target: 'note' | 'clip' = 'note') { showFloatMenu(e, [{ label: 'Menlo 11', fn: `applyMonoFont(11,'${target}')` }, { label: 'Menlo 12', fn: `applyMonoFont(12,'${target}')` }, '---', { label: '✕ Default font', fn: `applyMonoFont(0,'${target}')` }]) }
+function applyMonoFont(px: number, target: 'note' | 'clip' = 'note') {
+  const el = target === 'clip' ? clipPasteArea : noteEditor
+  el.focus()
   const sel = window.getSelection()
   if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return
   const range = sel.getRangeAt(0)
@@ -615,7 +616,7 @@ function applyMonoFont(px: number) {
   span.appendChild(range.extractContents())
   range.insertNode(span)
   sel.removeAllRanges(); sel.addRange(range)
-  saveNote()
+  if (target === 'clip') autoSaveClip(); else saveNote()
 }
 function setNoteImgSize(mode: string) { const img = (window as any)._noteImg as HTMLImageElement | null; if (!img) return; if (mode === 'small') { img.style.width = '200px'; img.style.maxWidth = '200px'; img.style.height = 'auto' } else if (mode === 'fit') { img.style.width = ''; img.style.maxWidth = '100%'; img.style.height = 'auto' } else { img.style.width = 'auto'; img.style.maxWidth = 'none'; img.style.height = 'auto' }; saveNote() }
 
@@ -1219,6 +1220,9 @@ onDestroy(() => {
     <div class="clip-panel" id="clip-panel" style="display:none">
       <div class="clip-panel-head">📋 New clip — paste content, give it a title, then save</div>
       <input type="text" id="clip-title-input" placeholder="Title for this clip…" maxlength="120" bind:this={clipTitleInput}>
+      <div class="clip-toolbar">
+        <button onclick={(e) => showFontMenu(e, 'clip')} title="Monospace font">Menlo ▾</button>
+      </div>
       <div id="clip-paste-area" contenteditable="true" spellcheck="false" bind:this={clipPasteArea}></div>
       <div class="clip-foot">
         <button class="clip-cancel" onclick={cancelClip}>Cancel</button>
@@ -1476,6 +1480,9 @@ onDestroy(() => {
 .clip-panel-head{padding:8px 14px;font-size:.78rem;font-weight:600;color:var(--accent);background:#ede9fe;letter-spacing:.04em}
 #clip-title-input{width:100%;border:none;border-bottom:1px solid var(--border);padding:10px 14px;font-size:.9rem;font-family:inherit;background:var(--surface);outline:none;color:var(--text)}
 #clip-title-input::placeholder{color:var(--muted)}
+.clip-toolbar{display:flex;gap:3px;padding:6px 14px;border-bottom:1px solid var(--border)}
+.clip-toolbar button{padding:3px 8px;border:1px solid var(--border);border-radius:6px;font-size:.78rem;cursor:pointer;background:transparent;font-family:inherit;color:var(--text)}
+.clip-toolbar button:hover{border-color:var(--accent);color:var(--accent)}
 #clip-paste-area{min-height:100px;max-height:260px;overflow-y:auto;padding:12px 14px;font-size:.85rem;line-height:1.6;outline:none;background:var(--surface);color:var(--text)}
 #clip-paste-area:empty::before{content:'Paste your content here…';color:var(--muted);pointer-events:none}
 .clip-foot{display:flex;justify-content:flex-end;gap:8px;padding:8px 14px;border-top:1px solid var(--border);background:var(--surface)}
