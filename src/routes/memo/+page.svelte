@@ -783,7 +783,7 @@ function showClipPanel() {
 function cancelClip() { document.getElementById('clip-panel')!.style.display = 'none' }
 async function saveClip() {
   const title = clipTitleInput.value.trim() || 'Untitled clip'; const content = clipPasteArea.innerHTML
-  if (!clipPasteArea.innerText.trim()) { clipPasteArea.focus(); return }
+  if (!clipPasteArea.innerText.trim() && !clipPasteArea.querySelector('img')) { clipPasteArea.focus(); return }
   snippets.push({ id: crypto.randomUUID(), title, content, created_at: new Date().toISOString() })
   await saveSnippets(); renderSnippets(); cancelClip()
 }
@@ -969,6 +969,12 @@ onMount(() => {
     const imgItem = Array.from(e.clipboardData!.items).find(i => i.type.startsWith('image/')); if (!imgItem) return
     e.preventDefault(); const file = imgItem.getAsFile()!; const reader = new FileReader()
     reader.onload = (ev: ProgressEvent<FileReader>) => { document.execCommand('insertHTML', false, `<img src="${ev.target!.result}" data-paste-img="1" style="max-width:100%;height:auto">`); saveNote() }
+    reader.readAsDataURL(file)
+  })
+  clipPasteArea.addEventListener('paste', (e: ClipboardEvent) => {
+    const imgItem = Array.from(e.clipboardData!.items).find(i => i.type.startsWith('image/')); if (!imgItem) return
+    e.preventDefault(); const file = imgItem.getAsFile()!; const reader = new FileReader()
+    reader.onload = (ev: ProgressEvent<FileReader>) => { document.execCommand('insertHTML', false, `<img src="${ev.target!.result}" style="max-width:100%;height:auto">`) }
     reader.readAsDataURL(file)
   })
   noteEditor.addEventListener('click', (e: MouseEvent) => {
