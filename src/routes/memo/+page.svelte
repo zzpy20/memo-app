@@ -603,6 +603,20 @@ function changeFontSize(delta: number) { noteEditor.focus(); const cur = parseIn
 function applyTextColor(color: string) { noteEditor.focus(); if (_savedRange) { const sel = window.getSelection()!; sel.removeAllRanges(); sel.addRange(_savedRange) }; document.execCommand('foreColor', false, color); const cp = document.getElementById('color-preview'); if (cp) cp.style.color = color }
 function showHighlightMenu(e: Event) { showFloatMenu(e, [{ label: '🟡 Yellow', fn: `applyHighlight('#fef08a')` }, { label: '🟢 Green', fn: `applyHighlight('#bbf7d0')` }, { label: '🩷 Pink', fn: `applyHighlight('#fecdd3')` }, { label: '🔵 Blue', fn: `applyHighlight('#bfdbfe')` }, '---', { label: '✕ Remove', fn: `applyHighlight('transparent')` }]) }
 function applyHighlight(color: string) { noteEditor.focus(); if (!document.execCommand('hiliteColor', false, color)) document.execCommand('backColor', false, color) }
+function showFontMenu(e: Event) { showFloatMenu(e, [{ label: 'Menlo 11', fn: `applyMonoFont(11)` }, { label: 'Menlo 12', fn: `applyMonoFont(12)` }, '---', { label: '✕ Default font', fn: `applyMonoFont(0)` }]) }
+function applyMonoFont(px: number) {
+  noteEditor.focus()
+  const sel = window.getSelection()
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return
+  const range = sel.getRangeAt(0)
+  const span = document.createElement('span')
+  span.style.fontFamily = px ? "Menlo, 'SF Mono', monospace" : 'inherit'
+  span.style.fontSize = px ? px + 'px' : 'inherit'
+  span.appendChild(range.extractContents())
+  range.insertNode(span)
+  sel.removeAllRanges(); sel.addRange(range)
+  saveNote()
+}
 function setNoteImgSize(mode: string) { const img = (window as any)._noteImg as HTMLImageElement | null; if (!img) return; if (mode === 'small') { img.style.width = '200px'; img.style.maxWidth = '200px'; img.style.height = 'auto' } else if (mode === 'fit') { img.style.width = ''; img.style.maxWidth = '100%'; img.style.height = 'auto' } else { img.style.width = 'auto'; img.style.maxWidth = 'none'; img.style.height = 'auto' }; saveNote() }
 
 async function saveNote() {
@@ -960,7 +974,7 @@ onMount(() => {
     restoreFile, permDelete,
     toggleSnippet, openClipModal, deleteSnippet, renameClip, copyClipText,
     removeTag, selectTagSug, removeLink,
-    moveFile, bulkMoveTo, applyBlockStyle, applyHighlight,
+    moveFile, bulkMoveTo, applyBlockStyle, applyHighlight, applyMonoFont,
     renameFolder, removeFolder, setNoteImgSize, openFolderPicker,
   })
 
@@ -1182,6 +1196,7 @@ onDestroy(() => {
         <input type="color" id="text-color-input" value="#1c1917">
       </div>
       <button onclick={showHighlightMenu} title="Highlight">H▾</button>
+      <button onclick={showFontMenu} title="Monospace font">Menlo ▾</button>
       <div class="tb-sep"></div>
       <button onclick={() => exec('insertUnorderedList')}>• List</button>
       <button onclick={() => exec('insertOrderedList')}>1. List</button>
