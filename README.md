@@ -64,7 +64,7 @@ A lightweight capture panel, separate from the main note, stored in R2 as its ow
 - Per-file **captions and tags** (feed into full-text search)
 - Soft-delete per file (trash → restore or permanent delete)
 - **Multi-select bulk actions**: tag, move, delete, download (as a zip)
-- Upload progress bar with cancel; **100 MB per-file limit**, enforced client-side only (Cloudflare Free plan R2 cap)
+- Upload progress bar with cancel; **100 MB per-file limit**, enforced both client- and server-side (Cloudflare Free plan R2 cap)
 
 ### Memo detail page — Memo Info & other tools
 - UID, tags (autocomplete from all existing tags), links (label + URL), created date, cover image selector — all autosaved
@@ -175,6 +175,24 @@ After deploying a worker with schema changes, click **⟳ Reindex** on the home 
 
 ---
 
+## Testing
+
+Two independent suites, matching the two independently-deployed halves of the app:
+
+```sh
+npm test        # worker — Vitest + @cloudflare/vitest-pool-workers, runs against real D1/R2
+                 # bindings inside the actual workerd runtime via Miniflare. Fully local,
+                 # never touches production.
+npm run test:e2e   # frontend — Playwright, drives a real Chromium browser against a
+                    # production build (npm run build && preview). All requests to the
+                    # Worker are intercepted and mocked (see test-e2e/helpers.ts), so this
+                    # never touches production either.
+```
+
+Both are smoke-level coverage (auth, core CRUD, the two editors' autosave behaviour), not exhaustive — there's no coverage of file uploads/lightbox/share pages/email/calendar/iOS quick-capture yet.
+
+---
+
 ## Auth
 
 A single shared passphrase protects all routes except `/share/*`. Set it as a Worker secret in the Cloudflare dashboard:
@@ -201,5 +219,4 @@ Email (`OWNER_EMAIL`, `RESEND_API_KEY`, `RESEND_FROM`) is configured the same wa
 
 ## Known gaps
 
-- The 100 MB upload limit is enforced client-side only; there's no server-side size check in `worker.ts`.
 - The 10 GB storage figure shown on the home page is a display label, not an enforced quota.

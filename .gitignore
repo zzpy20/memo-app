@@ -6,3 +6,8 @@
 !.env.example
 node_modules/
 _worker_bundle.js
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
