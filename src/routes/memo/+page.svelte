@@ -618,7 +618,7 @@ function applyMonoFont(px: number, target: 'note' | 'clip' = 'note') {
   sel.removeAllRanges(); sel.addRange(range)
   if (target === 'clip') autoSaveClip(); else saveNote()
 }
-function setNoteImgSize(mode: string) { const img = (window as any)._noteImg as HTMLImageElement | null; if (!img) return; if (mode === 'small') { img.style.width = '200px'; img.style.maxWidth = '200px'; img.style.height = 'auto' } else if (mode === 'medium') { img.style.width = '400px'; img.style.maxWidth = '400px'; img.style.height = 'auto' } else if (mode === 'fit') { img.style.width = ''; img.style.maxWidth = '100%'; img.style.height = 'auto' } else { img.style.width = 'auto'; img.style.maxWidth = 'none'; img.style.height = 'auto' }; saveNote() }
+function setNoteImgSize(mode: string) { const img = (window as any)._noteImg as HTMLImageElement | null; if (!img) return; if (mode === 'small') { img.style.width = '200px'; img.style.maxWidth = '200px'; img.style.height = 'auto' } else if (mode === 'medium') { img.style.width = '400px'; img.style.maxWidth = '400px'; img.style.height = 'auto' } else if (mode === 'large') { img.style.width = '600px'; img.style.maxWidth = '600px'; img.style.height = 'auto' } else if (mode === 'fit') { img.style.width = ''; img.style.maxWidth = '100%'; img.style.height = 'auto' } else { img.style.width = 'auto'; img.style.maxWidth = 'none'; img.style.height = 'auto' }; saveNote() }
 
 async function saveNote() {
   noteEditor.querySelectorAll('input[type="checkbox"]').forEach((cb: Element) => { if ((cb as HTMLInputElement).checked) cb.setAttribute('checked', ''); else cb.removeAttribute('checked') })
@@ -1024,7 +1024,7 @@ onMount(() => {
     const target = e.target as HTMLElement
     if (target.tagName === 'IMG' && (target as HTMLImageElement).dataset.pasteImg) {
       e.stopPropagation(); (window as any)._noteImg = target
-      showFloatMenuAt(target.getBoundingClientRect(), [{ label: 'Small  (200 px)', fn: `setNoteImgSize('small')` }, { label: 'Medium  (400 px)', fn: `setNoteImgSize('medium')` }, { label: 'Best fit  (100%)', fn: `setNoteImgSize('fit')` }, { label: 'Original size', fn: `setNoteImgSize('original')` }])
+      showFloatMenuAt(target.getBoundingClientRect(), [{ label: 'Small  (200 px)', fn: `setNoteImgSize('small')` }, { label: 'Medium  (400 px)', fn: `setNoteImgSize('medium')` }, { label: 'Large  (600 px)', fn: `setNoteImgSize('large')` }, { label: 'Best fit  (100%)', fn: `setNoteImgSize('fit')` }, { label: 'Original size', fn: `setNoteImgSize('original')` }])
     }
   })
 
