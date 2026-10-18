@@ -77,6 +77,9 @@ A lightweight capture panel, separate from the main note, stored in R2 as its ow
 ### Share page
 Public, unauthenticated read-only view at `/share?token={share_token}` (generate/revoke the link from the memo detail page). Shows cover, title/description/tags, the note, clips (read-only, collapsible), and files (with its own lightbox and download links).
 
+### About page
+A one-page reminder of what the app is, how it runs and what to do when it doesn't, at `/_about/` (`static/_about/index.html`, copied as-is into the Pages build, so it deploys with the frontend). It asks the Worker's `?check=1` whether it is answering and, with this browser's saved token, whether that still works. Linked from the ⓘ in the home page header and from the home portal. Public, so nothing secret in it.
+
 ### Dark mode
 Toggled via a floating button, persisted in `localStorage`. Fully CSS-custom-property driven.
 

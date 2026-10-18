@@ -354,6 +354,7 @@
   {#if !inTrash}<button class="new-btn" onclick={newMemo}>+ New Memo</button>{/if}
   {#if storageText}<span class="storage-label">{storageText}</span>{/if}
   <button class="shortcuts-btn" onclick={() => { shortcutsOpen = true; tokenVisible = false }} title="iOS Shortcuts Setup">⌘</button>
+  <a class="shortcuts-btn" href="/_about/" data-sveltekit-reload title="About: what this app is, how it runs and what to do when it doesn't" style="text-decoration:none">ⓘ</a>
   <button class="signout-btn" onclick={logout}>Sign out</button>
 </header>
 
