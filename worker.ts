@@ -57,6 +57,92 @@ const MIME_EXT: Record<string, string> = {
   'application/msword': 'doc',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
 }
+// ── Clip HTML sanitizer ───────────────────────────────────────────────────────
+// Clips are rendered with {@html} (including on the public share page), so any
+// HTML accepted from outside must go through this allowlist first.
+const CLIP_ALLOWED = new Set(['b', 'strong', 'i', 'em', 'u', 'br', 'p', 'ul', 'ol', 'li', 'a', 'h1', 'h2', 'h3', 'blockquote', 'code', 'pre'])
+// Dropped together with everything inside them
+const CLIP_DROP = 'script,style,head,title,iframe,object,embed,svg,math,template,noscript,form,input,button,textarea,select,img,video,audio,picture,source,link,meta,base,canvas'
+
+type ClipFmt = { b?: boolean; i?: boolean; u?: boolean }
+
+// Apple's "Make HTML from Rich Text" puts bold/italic in a <style> block
+// (span.s1 {font-weight: bold}) rather than <b>, so read those class rules.
+function parseClipCss(html: string): Map<string, ClipFmt> {
+  const map = new Map<string, ClipFmt>()
+  for (const block of html.match(/<style[^>]*>[\s\S]*?<\/style>/gi) || []) {
+    for (const [, sel, body] of block.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+      const fmt = styleFmt(body)
+      if (!fmt.b && !fmt.i && !fmt.u) continue
+      for (const s of sel.split(',')) {
+        const m = s.trim().match(/\.([\w-]+)$/)
+        if (m) map.set(m[1], { ...map.get(m[1]), ...fmt })
+      }
+    }
+  }
+  return map
+}
+
+function styleFmt(css: string): ClipFmt {
+  const fmt: ClipFmt = {}
+  const w = css.match(/font-weight\s*:\s*([\w-]+)/i)?.[1]
+  if (w && (/^bold/i.test(w) || Number(w) >= 600)) fmt.b = true
+  if (/font-style\s*:\s*italic/i.test(css)) fmt.i = true
+  if (/text-decoration[\w-]*\s*:[^;]*underline/i.test(css)) fmt.u = true
+  // Apple also writes these as shorthand: "font: bold 12px Helvetica"
+  const font = css.match(/(?:^|;)\s*font\s*:([^;]*)/i)?.[1] || ''
+  if (/\bbold\b|\b[6-9]00\b/i.test(font)) fmt.b = true
+  if (/\bitalic\b/i.test(font)) fmt.i = true
+  return fmt
+}
+
+export async function sanitizeClipHtml(html: string): Promise<string> {
+  const classFmt = parseClipCss(html)
+  const fmtOf = (el: Element): ClipFmt => {
+    const fmt: ClipFmt = { ...styleFmt(el.getAttribute('style') || '') }
+    for (const c of (el.getAttribute('class') || '').split(/\s+/)) Object.assign(fmt, classFmt.get(c))
+    return fmt
+  }
+  const rewriter = new HTMLRewriter()
+    .on(CLIP_DROP, { element(el) { el.remove() } })
+    .on('*', {
+      element(el) {
+        const tag = el.tagName.toLowerCase()
+        if (CLIP_DROP.split(',').includes(tag)) return
+        // Turn CSS-based formatting into tags before attributes are stripped
+        const fmt = fmtOf(el)
+        const open = (fmt.b ? '<b>' : '') + (fmt.i ? '<i>' : '') + (fmt.u ? '<u>' : '')
+        const close = (fmt.u ? '</u>' : '') + (fmt.i ? '</i>' : '') + (fmt.b ? '</b>' : '')
+        if (open && !el.selfClosing && tag !== 'br') {
+          el.prepend(open, { html: true })
+          el.append(close, { html: true })
+        }
+        if (!CLIP_ALLOWED.has(tag)) { el.removeAndKeepContent(); return }
+        const href = tag === 'a' ? (el.getAttribute('href') || '').trim() : ''
+        for (const [name] of [...el.attributes]) el.removeAttribute(name)
+        if (tag === 'a') {
+          if (/^(https?:|mailto:)/i.test(href)) {
+            el.setAttribute('href', href)
+            el.setAttribute('rel', 'noopener noreferrer')
+            el.setAttribute('target', '_blank')
+          } else {
+            el.removeAndKeepContent()
+          }
+        }
+      },
+      comments(c) { c.remove() },
+    })
+  const out = await rewriter.transform(new Response(html)).text()
+  return out.replace(/<!doctype[^>]*>/gi, '').trim()
+}
+
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<(br|\/p|\/li|\/h[1-3]|\/blockquote|\/pre)\b[^>]*>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')
+}
+
 function mimeFromFilename(filename: string, fallback: string): string {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
   return MIME_MAP[ext] || fallback
@@ -664,7 +750,8 @@ app.delete('/memos/:id/files/:filename{.+}', async (c) => {
 })
 
 // ── iOS Shortcut quick-capture ────────────────────────────────────────────────
-// POST /quick-capture?t=TOKEN  { memo_id, type:"text"|"image", content?, data?, filename?, mime? }
+// POST /quick-capture?t=TOKEN  { memo_id, type:"text"|"html"|"image"|"file", content?, data?, filename?, mime? }
+// type "html": rich text from Shortcuts' "Make HTML from Rich Text"; sanitized via sanitizeClipHtml
 
 app.post('/quick-capture', async (c) => {
   const db = drizzle(c.env.MEMO_D1)
@@ -676,10 +763,17 @@ app.post('/quick-capture', async (c) => {
   if (!row) return c.json({ error: 'not_found' }, 404)
   const id = row.id
 
-  if (type === 'text' && content) {
-    const raw = String(content).trim()
-    const firstLine = raw.split('\n')[0].trim().slice(0, 60) || 'Capture'
-    const htmlContent = raw.split('\n').map(l => l.trim() ? `<p>${l.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>` : '<br>').join('')
+  if ((type === 'text' || type === 'html') && content) {
+    let raw: string, htmlContent: string
+    if (type === 'html') {
+      htmlContent = await sanitizeClipHtml(String(content))
+      raw = htmlToPlainText(htmlContent).trim()
+      if (!raw) return c.json({ error: 'empty_content' }, 400)
+    } else {
+      raw = String(content).trim()
+      htmlContent = raw.split('\n').map(l => l.trim() ? `<p>${l.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>` : '<br>').join('')
+    }
+    const firstLine = raw.split('\n').map(l => l.trim()).find(Boolean)?.slice(0, 60) || 'Capture'
 
     const obj = await c.env.MEMO_R2.get(pfx(id) + '_snippets')
     let snippets: any[] = []

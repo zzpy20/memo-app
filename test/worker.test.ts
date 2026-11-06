@@ -112,3 +112,58 @@ describe('file upload size limit', () => {
     expect((await res.json<any>()).key).toBe('small.txt')
   })
 })
+
+describe('quick-capture html clips', () => {
+  async function capture(content: string) {
+    const created = await SELF.fetch(auth('https://x/memos'), { method: 'POST' })
+    const { id, memo_id } = await created.json<{ id: string; memo_id: string }>()
+    const res = await SELF.fetch(auth('https://x/quick-capture'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ memo_id, type: 'html', content }),
+    })
+    const snippets = await (await SELF.fetch(auth(`https://x/memos/${id}/snippets`))).json<any[]>()
+    return { res, clip: snippets[0] }
+  }
+
+  it('keeps basic formatting and strips everything dangerous', async () => {
+    const { res, clip } = await capture(
+      '<p onclick="x()">Hello <b>bold</b> <em>it</em><script>alert(1)</script></p>' +
+      '<img src=x onerror=alert(1)><a href="javascript:alert(1)">bad</a> <a href="https://ok.example" style="color:red">good</a>' +
+      '<iframe src="https://evil"></iframe><div class="x">kept text</div><ul><li>one</li></ul>'
+    )
+    expect(res.status).toBe(200)
+    const html: string = clip.content
+    expect(html).toContain('<b>bold</b>')
+    expect(html).toContain('<em>it</em>')
+    expect(html).toContain('<ul><li>one</li></ul>')
+    expect(html).toContain('<a href="https://ok.example" rel="noopener noreferrer" target="_blank">good</a>')
+    expect(html).toContain('kept text')
+    expect(html).toContain('bad') // unsafe link unwrapped, text kept
+    for (const bad of ['<script', 'alert(1)', 'onerror', 'onclick', 'javascript:', '<img', '<iframe', '<div', 'style=', 'class=']) {
+      expect(html).not.toContain(bad)
+    }
+    expect(clip.title).toBe('Hello bold it')
+  })
+
+  it("converts Apple's class-based bold/italic into tags", async () => {
+    const { clip } = await capture(
+      '<!DOCTYPE html><html><head><meta charset="UTF-8"><style type="text/css">' +
+      'p.p1 {margin: 0.0px; font: 17.0px \'.SF UI\'} span.s1 {font-weight: bold} span.s2 {font: italic 17.0px Helvetica}' +
+      '</style></head><body><p class="p1">Plain <span class="s1">Strong</span> and <span class="s2">slanted</span></p>' +
+      '<p class="p1"><br></p><p class="p1">Second line</p></body></html>'
+    )
+    const html: string = clip.content
+    expect(html).toContain('<b>Strong</b>')
+    expect(html).toContain('<i>slanted</i>')
+    expect(html).toContain('Second line')
+    expect(html).not.toMatch(/<(style|head|meta|span|html|body)/)
+    expect(html).not.toContain('font:')
+    expect(clip.title).toBe('Plain Strong and slanted')
+  })
+
+  it('rejects html that sanitizes to nothing', async () => {
+    const { res } = await capture('<script>alert(1)</script>')
+    expect(res.status).toBe(400)
+  })
+})
