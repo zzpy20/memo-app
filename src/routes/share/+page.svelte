@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount } from 'svelte'
-import { WORKER } from '$lib/api'
+import { WORKER, fmtFileTime } from '$lib/api'
 
 const IMG_EXTS  = new Set(['jpg','jpeg','png','gif','webp','avif','bmp','svg','tiff'])
 const VIDEO_EXTS = new Set(['mp4','mov','webm','avi','mkv','m4v'])
@@ -179,7 +179,7 @@ onMount(async () => {
         {/if}
         <div class="file-info">
           <div class="file-name">{basename(f.key)}</div>
-          <div class="file-meta">{fmtSize(f.size)} · {fmtDate(f.uploaded)}</div>
+          <div class="file-meta">{fmtSize(f.size)} · {fmtFileTime(f.uploaded)}</div>
         </div>
         {#if isPreviewable(f.key)}
           <button class="file-view" onclick={() => openLightbox(f.key)}>View</button>

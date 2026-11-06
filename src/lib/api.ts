@@ -50,6 +50,15 @@ export function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
+// Exact save time of a file, always in Brisbane time (no DST, so always AEST)
+// regardless of the viewer's device timezone. e.g. "6 Nov 2026, 9:40:12 pm AEST"
+export function fmtFileTime(iso: string): string {
+  return new Date(iso).toLocaleString('en-AU', {
+    timeZone: 'Australia/Brisbane', day: 'numeric', month: 'short', year: 'numeric',
+    hour: 'numeric', minute: '2-digit', second: '2-digit', timeZoneName: 'short',
+  })
+}
+
 export function fmtDateTime(iso: string): string {
   const d = new Date(iso)
   return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
