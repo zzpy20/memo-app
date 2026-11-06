@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount, onDestroy, tick } from 'svelte'
-import { api, fileUrl as apiFileUrl, safeJson, esc, fmtDate, fmtFileTime, getToken, logout, WORKER } from '$lib/api'
+import { api, fileUrl as apiFileUrl, safeJson, esc, fmtDate, fmtFileTime, newestFirst, getToken, logout, WORKER } from '$lib/api'
 
 let memoId = ''
 let memo: any = null
@@ -789,7 +789,7 @@ function printLabelModal() {
   w.document.close()
 }
 
-async function loadSnippets() { try { snippets = await (await api('/memos/' + memoId + '/snippets')).json() } catch { snippets = [] }; renderSnippets() }
+async function loadSnippets() { try { snippets = newestFirst(await (await api('/memos/' + memoId + '/snippets')).json()) } catch { snippets = [] }; renderSnippets() }
 async function saveSnippets() { try { await api('/memos/' + memoId + '/snippets', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(snippets) }) } catch {} }
 
 function showClipPanel() {
@@ -816,7 +816,7 @@ async function autoSaveClip() {
     if (s) { s.title = title; s.content = content }
   } else {
     _clipDraftId = crypto.randomUUID()
-    snippets.push({ id: _clipDraftId, title, content, created_at: new Date().toISOString() })
+    snippets.unshift({ id: _clipDraftId, title, content, created_at: new Date().toISOString() })
   }
   await saveSnippets(); renderSnippets()
 }

@@ -50,6 +50,12 @@ export function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
+// Clips are shown newest first. Sort on load rather than trusting stored order:
+// the app and iOS quick-capture historically added clips at opposite ends.
+export function newestFirst<T extends { created_at?: string }>(list: T[]): T[] {
+  return list.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+}
+
 // Exact save time of a file, always in Brisbane time (no DST, so always AEST)
 // regardless of the viewer's device timezone. e.g. "6 Nov 2026, 9:40:12 pm AEST"
 export function fmtFileTime(iso: string): string {

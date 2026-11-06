@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onMount } from 'svelte'
-import { WORKER, fmtFileTime } from '$lib/api'
+import { WORKER, fmtFileTime, newestFirst } from '$lib/api'
 
 const IMG_EXTS  = new Set(['jpg','jpeg','png','gif','webp','avif','bmp','svg','tiff'])
 const VIDEO_EXTS = new Set(['mp4','mov','webm','avi','mkv','m4v'])
@@ -89,7 +89,7 @@ onMount(async () => {
     ])
     noteHtml = await noteRes.text()
     files = await filesRes.json()
-    snippets = await snippetsRes.json().catch(() => [])
+    snippets = newestFirst(await snippetsRes.json().catch(() => []))
   } catch { error = 'Failed to load memo.' }
   loading = false
 
