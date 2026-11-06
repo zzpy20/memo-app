@@ -162,6 +162,25 @@ describe('quick-capture html clips', () => {
     expect(clip.title).toBe('Plain Strong and slanted')
   })
 
+  it('keeps line breaks from Notes-style <div> lines', async () => {
+    const { clip } = await capture('<div>Line one</div><div><br></div><div>Line <b>two</b></div><div>Line three</div>')
+    expect(clip.content).toBe('Line one<br><br>Line <b>two</b><br>Line three')
+    expect(clip.title).toBe('Line one')
+  })
+
+  it('keeps structure from webpage-style sections and small headings', async () => {
+    const { clip } = await capture(
+      '<section><h4>One file</h4><div><p>The <strong>Kopia</strong> page.</p></div></section>' +
+      '<section><h4>Everything</h4><div>Run recovery.</div></section>'
+    )
+    expect(clip.content).toBe('<b>One file</b><br><p>The <strong>Kopia</strong> page.</p><b>Everything</b><br>Run recovery.')
+  })
+
+  it("keeps Apple's blank-line paragraphs", async () => {
+    const { clip } = await capture('<p class="p1">First</p><p class="p2"><br></p><p class="p1">Second</p>')
+    expect(clip.content).toBe('<p>First</p><p><br></p><p>Second</p>')
+  })
+
   it('rejects html that sanitizes to nothing', async () => {
     const { res } = await capture('<script>alert(1)</script>')
     expect(res.status).toBe(400)

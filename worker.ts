@@ -62,6 +62,10 @@ const MIME_EXT: Record<string, string> = {
 // HTML accepted from outside must go through this allowlist first.
 const CLIP_ALLOWED = new Set(['b', 'strong', 'i', 'em', 'u', 'br', 'p', 'ul', 'ol', 'li', 'a', 'h1', 'h2', 'h3', 'blockquote', 'code', 'pre'])
 // Dropped together with everything inside them
+// Block elements that aren't in the allowlist: unwrapped, but end with a line
+// break so lines don't run together (Notes and webpages use <div> per line)
+const CLIP_BLOCK = new Set(['div', 'section', 'article', 'header', 'footer', 'main', 'aside', 'nav', 'figure', 'figcaption',
+  'address', 'details', 'summary', 'table', 'tr', 'dl', 'dt', 'dd', 'hr', 'h4', 'h5', 'h6'])
 const CLIP_DROP = 'script,style,head,title,iframe,object,embed,svg,math,template,noscript,form,input,button,textarea,select,img,video,audio,picture,source,link,meta,base,canvas'
 
 type ClipFmt = { b?: boolean; i?: boolean; u?: boolean }
@@ -117,7 +121,12 @@ export async function sanitizeClipHtml(html: string): Promise<string> {
           el.prepend(open, { html: true })
           el.append(close, { html: true })
         }
-        if (!CLIP_ALLOWED.has(tag)) { el.removeAndKeepContent(); return }
+        if (!CLIP_ALLOWED.has(tag)) {
+          if (/^h[4-6]$/.test(tag) && !el.selfClosing) { el.prepend('<b>', { html: true }); el.append('</b>', { html: true }) }
+          if (CLIP_BLOCK.has(tag)) el.after('<br>', { html: true })
+          el.removeAndKeepContent()
+          return
+        }
         const href = tag === 'a' ? (el.getAttribute('href') || '').trim() : ''
         for (const [name] of [...el.attributes]) el.removeAttribute(name)
         if (tag === 'a') {
@@ -133,7 +142,18 @@ export async function sanitizeClipHtml(html: string): Promise<string> {
       comments(c) { c.remove() },
     })
   const out = await rewriter.transform(new Response(html)).text()
-  return out.replace(/<!doctype[^>]*>/gi, '').trim()
+  const BR = '<br\\s*/?>'
+  return out
+    .replace(/<!doctype[^>]*>/gi, '')
+    // a block that already ends a line (</p>, </li>…) doesn't need the extra break
+    .replace(new RegExp(`(</(?:p|li|ul|ol|h[1-3]|blockquote|pre)>)(?:\\s*${BR})+`, 'gi'), '$1')
+    // trailing break after text inside a block is redundant (but keep <p><br></p>, Apple's blank line)
+    .replace(new RegExp(`([^>\\s])\\s*(?:${BR}\\s*)+(</(?:p|li|h[1-3]|blockquote|pre)>)`, 'gi'), '$1$2')
+    // at most one blank line in a row
+    .replace(new RegExp(`(?:${BR}\\s*){3,}`, 'gi'), '<br><br>')
+    .trim()
+    .replace(new RegExp(`^(?:${BR}\\s*)+|(?:\\s*${BR})+$`, 'gi'), '')
+    .trim()
 }
 
 function htmlToPlainText(html: string): string {
