@@ -11,3 +11,6 @@ _worker_bundle.js
 test-results/
 playwright-report/
 blob-report/
+
+# iOS Shortcuts workspace (contains upload token)
+shortcuts/
